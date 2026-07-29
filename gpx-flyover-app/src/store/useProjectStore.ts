@@ -15,17 +15,19 @@ import type {
 interface ProjectActions {
   setTrack: (track: Track | null) => void;
   setSegmentMode: (mode: SegmentMode) => void;
+  setTitle: (title: string) => void;
   updateVideo: (patch: Partial<VideoParams>) => void;
   updateCamera: (patch: Partial<CameraParams>) => void;
   updateMap: (patch: Partial<MapParams>) => void;
   updateVehicle: (patch: Partial<VehicleParams>) => void;
   setMusicVolume: (volume: number) => void;
   addMusicTrack: (track: MusicTrack) => void;
-  updateMusicTrack: (id: string, patch: Partial<MusicTrack>) => void;
-  removeMusicTrack: (id: string) => void;
+  updateMusicTrack: (id: number, patch: Partial<MusicTrack>) => void;
+  removeMusicTrack: (id: number) => void;
+  setPhotoDefaultDuration: (sec: number) => void;
   addPhotoClip: (clip: PhotoClip) => void;
-  updatePhotoClip: (id: string, patch: Partial<PhotoClip>) => void;
-  removePhotoClip: (id: string) => void;
+  updatePhotoClip: (id: number, patch: Partial<PhotoClip>) => void;
+  removePhotoClip: (id: number) => void;
   setSnapEnabled: (enabled: boolean) => void;
 }
 
@@ -34,20 +36,22 @@ type ProjectStore = ProjectState & ProjectActions;
 const initialState: ProjectState = {
   track: null,
   segmentMode: 'longest',
-  video: { resolution: '1080p', bitrateMbps: 8, durationSec: 60, fps: 30, speed: 1 },
-  camera: { pitch: 60, zoom: 15, orbitAmplitude: 15, orbitPeriodSec: 20 },
-  map: { maptilerToken: '', styleId: 'satellite-hybrid', customStyleUrl: '' },
+  title: '',
+  video: { resolution: '1920x1080', bitrateMbps: 8, durationSec: 30, fps: 30 },
+  camera: { pitch: 66, zoom: 12.5, orbitAmp: 25, orbitPeriod: 14 },
+  map: { maptilerToken: 'FyCTckIX29KYsBltxupY', styleId: 'hybrid-v4', customStyleUrl: '' },
   vehicle: {
-    type: 'motorcycle',
-    color: '#ff3b30',
-    iconStyle: 'filled-symbol',
-    size: 1,
-    useRealAltitude: false,
-    altitudeExaggeration: 1,
+    icon: '🏍️',
+    color: '#00e5ff',
+    iconStyle: 'filled',
+    size: 0.55,
+    use3DAltitude: false,
+    altExaggeration: 8,
   },
   musicTracks: [],
   musicVolume: 0.6,
   photoClips: [],
+  photoDefaultDuration: 3,
   snapEnabled: true,
 };
 
@@ -60,6 +64,7 @@ export const useProjectStore = create<ProjectStore>()(
       ...initialState,
       setTrack: (track) => set({ track }),
       setSegmentMode: (segmentMode) => set({ segmentMode }),
+      setTitle: (title) => set({ title }),
       updateVideo: (patch) => set((s) => ({ video: { ...s.video, ...patch } })),
       updateCamera: (patch) => set((s) => ({ camera: { ...s.camera, ...patch } })),
       updateMap: (patch) => set((s) => ({ map: { ...s.map, ...patch } })),
@@ -72,6 +77,7 @@ export const useProjectStore = create<ProjectStore>()(
         })),
       removeMusicTrack: (id) =>
         set((s) => ({ musicTracks: s.musicTracks.filter((t) => t.id !== id) })),
+      setPhotoDefaultDuration: (photoDefaultDuration) => set({ photoDefaultDuration }),
       addPhotoClip: (clip) => set((s) => ({ photoClips: [...s.photoClips, clip] })),
       updatePhotoClip: (id, patch) =>
         set((s) => ({

@@ -1,14 +1,108 @@
-import { useRef } from 'react';
+import { MapLibreMap, type ErrorEvent } from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import { useEffect, useRef } from 'react';
+import { setSessionEngine, setSessionMap, setSessionRecCanvas } from '../../app/flyoverSession';
+import { setupRouteLayers, styleUrlFor } from '../../map/mapSetup';
+import { PreviewEngine } from '../../preview/PreviewEngine';
+import { useProjectStore } from '../../store/useProjectStore';
+import { usePlaybackStore } from '../../store/usePlaybackStore';
 import './mapCanvas.css';
 
-// Placeholder: il mount di MapLibre GL (stile MapTiler + token) arriva in fase 2,
-// insieme al parsing GPX che alimenta la sorgente GeoJSON del percorso.
+// Monta MapLibre GL e ricrea mappa/percorso/PreviewEngine ogni volta che viene caricata una
+// nuova traccia — esattamente come "1. Carica traccia sulla mappa" nell'originale, che
+// distrugge la mappa precedente e ne crea una nuova (gpx-flyover.html:427-478).
 export function MapCanvas() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLCanvasElement>(null);
+  const recCanvasRef = useRef<HTMLCanvasElement>(null);
+  const mapInstanceRef = useRef<MapLibreMap | null>(null);
+  const track = useProjectStore((s) => s.track);
+
+  useEffect(() => {
+    setSessionRecCanvas(recCanvasRef.current);
+    return () => setSessionRecCanvas(null);
+  }, []);
+
+  useEffect(() => {
+    if (!track || !containerRef.current) return;
+
+    usePlaybackStore.getState().setIsPlaying(false);
+    usePlaybackStore.getState().setCanPreview(false);
+    setSessionEngine(null);
+
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.remove();
+      mapInstanceRef.current = null;
+    }
+
+    const { map: mapParams, camera } = useProjectStore.getState();
+    const styleUrl = styleUrlFor(mapParams.styleId, mapParams.customStyleUrl, mapParams.maptilerToken);
+
+    const map = new MapLibreMap({
+      container: containerRef.current,
+      style: styleUrl,
+      center: [track.pts[0].lon, track.pts[0].lat],
+      zoom: camera.zoom,
+      pitch: camera.pitch,
+      bearing: 0,
+      maxPitch: 85,
+      // preserveDrawingBuffer è necessario per catturare i frame dal canvas in registrazione
+      canvasContextAttributes: { antialias: true, preserveDrawingBuffer: true },
+    });
+    mapInstanceRef.current = map;
+    setSessionMap(map);
+
+    map.on('error', (e: ErrorEvent) => {
+      console.error('MapLibre GL error:', e);
+      usePlaybackStore.getState().setStatusMessage(`Errore mappa: ${e.error?.message ?? 'errore sconosciuto'}`);
+    });
+
+    map.on('load', () => {
+      const currentTrack = useProjectStore.getState().track;
+      if (!currentTrack) return;
+      try {
+        setupRouteLayers(map, currentTrack, mapParams.maptilerToken);
+        usePlaybackStore.getState().setStatusMessage('Traccia caricata. Premi Anteprima o Registra.');
+      } catch (err) {
+        console.error(err);
+        const message = err instanceof Error ? err.message : String(err);
+        usePlaybackStore
+          .getState()
+          .setStatusMessage(`Errore durante il disegno del percorso: ${message} (i pulsanti restano comunque attivi)`);
+      } finally {
+        usePlaybackStore.getState().setCanPreview(true);
+        if (overlayRef.current) {
+          const engine = new PreviewEngine({
+            map,
+            overlayCanvas: overlayRef.current,
+            getTrack: () => useProjectStore.getState().track!,
+            getVideoParams: () => useProjectStore.getState().video,
+            getCameraParams: () => useProjectStore.getState().camera,
+            getVehicleParams: () => useProjectStore.getState().vehicle,
+            getTitle: () => useProjectStore.getState().title,
+            getMusicTracks: () => useProjectStore.getState().musicTracks,
+            getPhotoClips: () => useProjectStore.getState().photoClips,
+            onTick: (info) => usePlaybackStore.getState().setTick(info),
+            onEnded: () => usePlaybackStore.getState().setIsPlaying(false),
+          });
+          setSessionEngine(engine);
+        }
+      }
+    });
+
+    return () => {
+      setSessionEngine(null);
+      map.remove();
+      if (mapInstanceRef.current === map) mapInstanceRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [track]);
 
   return (
     <div className="map-canvas" ref={containerRef}>
-      <span className="map-canvas__placeholder">Mappa (MapLibre GL) — in arrivo</span>
+      {!track && <span className="map-canvas__placeholder">Carica un file GPX per iniziare</span>}
+      <canvas className="map-canvas__overlay" ref={overlayRef} />
+      <canvas className="map-canvas__rec" ref={recCanvasRef} />
     </div>
   );
 }

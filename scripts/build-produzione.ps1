@@ -31,7 +31,7 @@ if ($LASTEXITCODE -ne 0) {
     Stop-EMostraErrore 'Build fallita, controlla gli errori sopra.'
 }
 
-Write-Host "`nAvvio l'anteprima locale della build (vite preview): il browser si aprirà automaticamente." -ForegroundColor Cyan
+Write-Host "`Avvio l'anteprima locale della build (vite preview): il browser si apre automaticamente." -ForegroundColor Cyan
 Write-Host "Chiudi questa finestra per fermare il server.`n" -ForegroundColor DarkGray
 
 npm run preview -- --open

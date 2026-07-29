@@ -1,22 +1,142 @@
 .timeline {
-  flex: 0 0 220px;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
+  gap: 8px;
+  padding: 10px 16px;
   border-top: 1px solid var(--border);
   font-size: 12px;
   color: var(--text);
 }
 
-.timeline__ruler {
-  flex: 0 0 24px;
-  padding: 4px 12px;
-  border-bottom: 1px solid var(--border);
+.lane-row {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  align-items: center;
+  gap: 8px;
 }
 
-.timeline__lane {
-  flex: 1 1 auto;
+.lane-row__label {
   display: flex;
   align-items: center;
-  padding: 0 12px;
-  border-bottom: 1px solid var(--border);
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.lane-add {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #141414;
+  border: none;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.lane {
+  position: relative;
+  height: 30px;
+  background: var(--code-bg);
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: text;
+}
+
+.lane-block {
+  position: absolute;
+  top: 2px;
+  height: 26px;
+  border-radius: 5px;
+  cursor: grab;
+  font-size: 10.5px;
+  color: #141414;
+  display: flex;
+  align-items: center;
+  user-select: none;
+}
+
+.lane-block--music {
+  background: #00e5ff;
+}
+
+.lane-block--photo {
+  border: 2px solid var(--accent);
+  background: #332b00;
+}
+
+.lane-block__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding: 0 14px 0 6px;
+  pointer-events: none;
+}
+
+.lane-block--photo .lane-block__label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  padding: 1px 14px 1px 4px;
+}
+
+.lane-block__thumb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.lane-block__resize {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: ew-resize;
+}
+.lane-block__resize--left {
+  left: 0;
+}
+.lane-block__resize--right {
+  right: 0;
+}
+
+.lane-block__remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ff4d4d;
+  color: #fff;
+  font-size: 9px;
+  line-height: 14px;
+  text-align: center;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.lane-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #fff;
+  pointer-events: none;
+  z-index: 6;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
 }

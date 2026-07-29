@@ -1,29 +1,36 @@
 import { SidebarSection } from './SidebarSection';
+import { GpxSourcePanel } from './GpxSourcePanel';
+import { VideoPanel } from './VideoPanel';
+import { CameraPanel } from './CameraPanel';
+import { MapStylePanel } from './MapStylePanel';
+import { VehiclePanel } from './VehiclePanel';
+import { MusicPhotosPanel } from './MusicPhotosPanel';
+import { ActionsPanel } from './ActionsPanel';
 import './sidebar.css';
+import './fields.css';
 
-// Sei sezioni collassabili come da prompt-refactoring.md invece del lungo elenco
-// verticale dell'originale. Contenuto reale dei pannelli: fase 2/4.
 export function Sidebar() {
   return (
     <aside className="sidebar">
       <SidebarSection title="Sorgente GPX" defaultOpen>
-        <p className="sidebar-placeholder">TODO: upload GPX, MapTiler token, modalità segmenti, statistiche.</p>
+        <GpxSourcePanel />
       </SidebarSection>
       <SidebarSection title="Video">
-        <p className="sidebar-placeholder">TODO: risoluzione, bitrate, durata, FPS, velocità.</p>
+        <VideoPanel />
       </SidebarSection>
       <SidebarSection title="Camera">
-        <p className="sidebar-placeholder">TODO: pitch, zoom, orbit, bearing.</p>
+        <CameraPanel />
       </SidebarSection>
       <SidebarSection title="Mappa">
-        <p className="sidebar-placeholder">TODO: stile mappa, URL personalizzato.</p>
+        <MapStylePanel />
       </SidebarSection>
       <SidebarSection title="Mezzo">
-        <p className="sidebar-placeholder">TODO: tipo, colore, stile icona, quota reale.</p>
+        <VehiclePanel />
       </SidebarSection>
       <SidebarSection title="Musica & Foto">
-        <p className="sidebar-placeholder">TODO: upload brani/foto, volume globale, snap.</p>
+        <MusicPhotosPanel />
       </SidebarSection>
+      <ActionsPanel />
     </aside>
   );
 }

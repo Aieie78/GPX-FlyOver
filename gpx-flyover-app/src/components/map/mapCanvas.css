@@ -1,4 +1,5 @@
 .map-canvas {
+  position: relative;
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
@@ -7,4 +8,30 @@
   background: #10131a;
   color: #6b7280;
   font-size: 13px;
+  overflow: hidden;
+}
+
+.map-canvas__placeholder {
+  position: relative;
+  z-index: 1;
+}
+
+.map-canvas__overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.map-canvas__rec {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+  display: none;
+  z-index: 3;
 }
