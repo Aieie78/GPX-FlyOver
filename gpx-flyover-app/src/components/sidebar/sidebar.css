@@ -1,0 +1,35 @@
+.sidebar {
+  width: 320px;
+  flex: 0 0 auto;
+  overflow-y: auto;
+  border-right: 1px solid var(--border);
+  background: var(--code-bg);
+}
+
+.sidebar-section {
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-section__title {
+  cursor: pointer;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-h);
+  list-style: none;
+  user-select: none;
+}
+
+.sidebar-section__title::-webkit-details-marker {
+  display: none;
+}
+
+.sidebar-section__body {
+  padding: 0 16px 16px;
+}
+
+.sidebar-placeholder {
+  font-size: 13px;
+  color: var(--text);
+  margin: 0;
+}

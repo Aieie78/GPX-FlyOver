@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>GPX Flyover Video Generator</title>
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAHZ0lEQVR4nLWXXYxdVRXHf2vvfb7ux9zpzHSGtkOk0GJBbRChSIlN4UUDGI0J0QeMIiZGAwlGEjW+6CO+iNEHHmwgwgvhQR98ESUpCTbSKkaNpoSG1pRiaUtLZ+7cr7P3Xj6ccz9GhUDQdXNyzrnn5PzX+q//WmtvAQwQd+3alfW9ewj0XmA3kAKi1CaCisDsMWuqk0PG10D9lgIj4BWQpwrnHz1x4sQQMAJw5ZUf3B6tPmOM3a8xooAyhhYQUDFgpD6bzU6MAWOswGOcOsLYEUEAMYYYwxET5J7Tp19+XVZXV4toGoeNs/ui9yWC05nw1EgFaCxq7eQaYypGYAoaI8SAhAAxQFRE49gHBFUUb5xLog9HTewddMHkDxoj+4IvS0GSijmtKDcyBXYOtQ6cA2snjFQEKBIjhFAd3oP3CB6N05RUXyUJviyNsfsC+YNOlftVYwSsToiv820s6hwkCerS+lw5gDHTDKNo7YB4j9oSMQYtQTyohk3pAKxqjKrc70Cv1qgGptka067OoUkKaYqmGbikYsDM6GBGA6JK8B7rSzDDqYpUK5bGZzBaUX21Q3E6iaOqCTVS056gaQpZhibZhP4p+AwDQL/bZU4jG6MR1jlSMrRmRzRCmCUBqL6oU/BxqRlT5TxJIE2JSYokCVg3Fd9sGYqgwz6f+/TdpLfdRnLqJM898QQX1tZJ0xRCrFIUIyITFioPaio2OaDGThxQl1RMTCqgirzyU7HGsN7tsf+Wj5N+80Fe7UNn/40cdCnP/PCRirnSQyghGCBOegSAqYSnjCWiYlBribZSfXVYtAa3RjFGGXjDhY2Us92CjXVl/ro9/GqoPGl6bOt51q7by3yjwFuLOlsFZWSKU/8cOo4eVKgiNKbKtbVgq3xbA6XCxfUc5wLXLa9x4+ol9qys87Ftr7G0fYON0Wf5VqPBWgKNI89z0QeyNEWNraqiTp3UuhVAtm77gE7odw6SFM0LtGhAUaBphk0sa2XGQmPEfbec5O7rz7DYGHK+m3H8jTl+f2aFvx0NLFx9K/7OO6N7+bj88dlnZYDgRkN00Ef6PWTQh9EICb5qUoCbtimpG1At7lpk1ihrw4QDu87x2Of/wGtrBY+/uJNfH9/GP9cKQnQUwx47R5e59PrvuHDhLb/efcs1rBUb46b5oTN1Q33nVOvmo1ppo74PAoveI2tKvgJPfOFFvv/shzj0wm5IIq3U0y5GZLHPFYPLqIO0KNjWbo/Scmh7o/6s1maEN+4ZEDVgZlQxKdKokfkI8zEiG5EDnbMMo+HQ87tpNwestPokNhAjdC5vQFAUoQQeuP3Ww3v86K2kPySKKFqrXuuZUfsRgifLCmRxZXWiAZwjOMfc3BYW8iZxXKIRnvr2Sxy9tMR3frGXi+s5aRFY9Wu0uwOiCKqKMYY8ywbDwSANiHmjyBhEj+33ob+BGQzQ4RD1IzpzC3TmlzCzczx6TztvspC3JuAi4KPh6z/Zy1XZOi999zc89sVj7J2/SDwfEFsNI+cSmnMdJMlyNcaIRlYGQ7LSE4NHQiR4jwGWtm5nfmEZRZGF5e0KQoiBVmeBpcUriBqqMqmFaARKL3RLx84bRnz5E//gM3vO8MjTu3n68Da2LjiSvDlpUDFGet11oi9REc4ONxisr9EQw9L8IkmSEWOoAlxY3qHRlzTntrC0soMQAi5JSLOcQb9HDAGR6sOOyMWY8eYg565rz/DTB/7KNx67jVfPL5MnJVFlWlGq9LrrhHKE10i332O+2UbETMCNMZjgS4pWh8Xl7YQQSJKURmuOJM1ptjukWV7lVyKDYElGgR22yy+PXcWfTy1xx0ffpDuwm1dodfoarTYuy7BiWGh1UFViDFjryBtNmnPzuEZrjqWVHcQYSbOcotlCVVGNiAiNVoskTTh7znPFli7X7u7SyIWHrz/LDddc4me//TCt3BM3T7mJNZptBmIYDvq4JCXNMlySIrVw5SM3H1RVJcsL8kYTnR0UooQoDH3C1z75Fz514yk2hjlRDWcuNnnyuWv5++ktNDI/pf9tLMaAsa5uw1MMp6rkjSZZXkweGKMYUQaloz+0/PirL9Bpj3j48QOcfKNNjMKgtORpeFfgAMa6SZObNddotUnSbJNXlzcySi9s7Qx49CsvEKJw34/uwFqlkZUANHNfLYTfBTjA5rY444BL0mqxIIKg+GD40u3HuWbHZW7adY5jx5f5wdM308xLrNEJYHibnL9XcyJmMiFEFNTQzAPrw5zv/Xw/fzq5lU5jRLWoNv+xH3lfJiA3HbirFFOtC8Z/rvVSQhCKzNPMPEHl39dys2OtsvfKiIBGvMxt2fqyiOyqc2SUagQLEOscbypx+W/osy/oOz0dW6QqwxPOl/6QteYR1ViCGKg2Nf9f0yBikhDiIWF1tWhd3jgsxuyrnXC8Y4jvDxnUi5hEYzza7TQPCkBRLG43SXhGMPtB365i3rdJnT4lHomlvafff/N1od6eA1mjteUhRO+Vme35/whbgZHCK6g81eteehQYAuZfJrLR1S5QqTsAAAAASUVORK5CYII=">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<style>
+  :root{color-scheme:dark;}
+  html,body{margin:0;height:100%;background:#0b0d10;color:#eee;font-family:system-ui,Segoe UI,Arial,sans-serif;}
+  #app{display:flex;height:100%;}
+  #sidebar{width:320px;flex:0 0 320px;padding:16px;box-sizing:border-box;background:#14171c;overflow-y:auto;border-right:1px solid #262b33;}
+  #sidebar h1{font-size:16px;margin:0 0 12px;}
+  #sidebar label{display:flex;align-items:center;gap:5px;font-size:12px;color:#9aa4b2;margin:12px 0 4px;min-height:15px;white-space:nowrap;}
+  .info{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#333c48;color:#9aa4b2;font-size:10px;font-style:normal;cursor:help;flex:0 0 auto;}
+  #sidebar input[type=text],#sidebar input[type=number],#sidebar select{width:100%;box-sizing:border-box;padding:6px 8px;background:#1d222a;border:1px solid #333c48;color:#eee;border-radius:6px;}
+  #sidebar input[type=file]{width:100%;font-size:12px;}
+  #sidebar button{width:100%;margin-top:10px;padding:10px;border:none;border-radius:6px;background:#e8b400;color:#141414;font-weight:700;cursor:pointer;font-size:13px;}
+  #sidebar button:disabled{background:#4a4a4a;color:#999;cursor:not-allowed;}
+  #sidebar button.secondary{background:#2a313c;color:#eee;}
+  #sidebar button.active{background:#e8b400;color:#141414;}
+  #seekBar{accent-color:#e8b400;}
+  #status{font-size:12px;color:#9aa4b2;margin-top:10px;white-space:pre-wrap;}
+  #stats{font-size:12px;background:#1d222a;padding:8px;border-radius:6px;margin-top:10px;line-height:1.5;}
+  #mapWrap{flex:1;position:relative;background:#000;}
+  #map{position:absolute;inset:0;}
+  #recCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;display:none;}
+  #previewOverlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2;}
+
+  #playerBar{position:absolute;left:20px;right:20px;bottom:20px;display:none;flex-direction:column;gap:6px;
+    background:rgba(20,23,28,0.9);border:1px solid #333c48;border-radius:10px;
+    padding:10px 16px;backdrop-filter:blur(4px);z-index:5;}
+  #playerBar .transportRow, .laneRow{
+    display:grid; grid-template-columns:140px 1fr 210px; align-items:center; gap:8px;}
+  #playerBar .lanePrefix{display:flex; align-items:center; gap:6px;}
+  #playerBar .laneSuffix{display:flex; align-items:center; gap:10px;}
+  #playerBar button{background:#2a313c;color:#eee;border:none;border-radius:6px;padding:8px 12px;cursor:pointer;font-size:14px;flex:0 0 auto;}
+  #playerBar button.active{background:#e8b400;color:#141414;}
+  #playerBar input[type=range]{width:100%;accent-color:#e8b400;}
+  #playerBar .time{color:#9aa4b2;font-size:12px;flex:0 0 auto;white-space:nowrap;}
+  #playerBar .speedGroup{display:flex;gap:4px;flex:0 0 auto;}
+  #playerBar .speedGroup button{padding:6px 8px;font-size:12px;}
+
+  .seekTrack{display:flex;align-items:center;padding:0 2px;}
+  .seekTrack input[type=range]{-webkit-appearance:none;appearance:none;width:100%;background:transparent;height:28px;margin:0;}
+  .seekTrack input[type=range]::-webkit-slider-runnable-track{height:4px;background:rgba(255,255,255,0.25);border-radius:2px;}
+  .seekTrack input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:1px;height:1px;opacity:0;}
+  .seekTrack input[type=range]::-moz-range-track{height:4px;background:rgba(255,255,255,0.25);border-radius:2px;}
+  .seekTrack input[type=range]::-moz-range-thumb{width:1px;height:1px;opacity:0;border:none;}
+
+  .laneRow .laneLabel{font-size:11px;color:#9aa4b2;white-space:nowrap;}
+  .lane{position:relative;height:28px;background:#1d222a;border-radius:5px;overflow:hidden;}
+  .lane-block{position:absolute;top:2px;height:24px;border-radius:4px;cursor:grab;
+    font-size:10.5px;color:#141414;display:flex;align-items:center;
+    user-select:none;}
+  .lane-block .lane-block-label{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+    padding:0 14px 0 6px;pointer-events:none;}
+  .lane-block.music{background:#00e5ff;}
+  .lane-block .resize-handle{position:absolute;top:0;bottom:0;width:8px;cursor:ew-resize;}
+  .lane-block .resize-handle.left{left:0;}
+  .lane-block .resize-handle.right{right:0;}
+  .lane-remove{position:absolute;top:2px;right:2px;width:14px;height:14px;border-radius:50%;
+    background:#ff4d4d;color:#fff;font-size:9px;line-height:14px;text-align:center;cursor:pointer;z-index:2;}
+  .lane-add{flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:#ffcc00;color:#141414;
+    border:none;font-size:16px;font-weight:700;line-height:1;cursor:pointer;}
+  .lane{cursor:text;}
+  .lane-playhead{position:absolute;top:0;bottom:0;width:2px;background:#fff;pointer-events:none;z-index:6;
+    box-shadow:0 0 4px rgba(255,255,255,0.8);}
+  .lane-block .thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:4px;pointer-events:none;}
+  .lane-block.photo{border:2px solid #ffcc00;background:#332b00;}
+  .lane-block.photo .lane-block-label{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,0.55);
+    color:#fff;padding:1px 14px 1px 4px;}
+  #videoOut{max-width:100%;margin-top:10px;border-radius:6px;}
+  a.dl{display:inline-block;margin-top:8px;color:#e8b400;font-size:12px;}
+  .row{display:flex;gap:8px;}
+  .row > div, .row > button{flex:1;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <h1>🏍️ GPX Flyover Video Generator</h1>
+
+    <label>MapTiler API Key <i class="info" title="La tua chiave gratuita, da cloud.maptiler.com → API Keys">ⓘ</i></label>
+    <input type="text" id="token" placeholder="es. FyCTckIX29KYsBltxupY" value="FyCTckIX29KYsBltxupY">
+
+    <label>Segmenti multipli <i class="info" title="Se il GPX contiene più segmenti: 'solo il più lungo' scarta gli altri (utile se il file unisce per errore più giorni diversi); 'concatena tutti' li unisce in ordine (utile per registrazioni lunghe interrotte da pause GPS/riavvii, es. voli lunghi)">ⓘ</i></label>
+    <select id="segmentMode">
+      <option value="longest">Usa solo il segmento più lungo</option>
+      <option value="concat">Concatena tutti i segmenti in ordine</option>
+    </select>
+
+    <label>File GPX</label>
+    <input type="file" id="gpxFile" accept=".gpx">
+
+    <div class="row">
+      <div>
+        <label>Risoluzione video</label>
+        <select id="resolution">
+          <option value="1280x720">720p (più leggero)</option>
+          <option value="1920x1080" selected>1080p (consigliato)</option>
+          <option value="2560x1440">1440p (più pesante)</option>
+        </select>
+      </div>
+      <div>
+        <label>Bitrate (Mbps)</label>
+        <input type="number" id="bitrate" value="8" min="1" max="30" step="0.5">
+      </div>
+    </div>
+
+    <label>Km/sec percepiti <i class="info" title="Usato solo per calcolare il suggerimento di durata dopo il caricamento del GPX. Più basso = suggerisce video più lunghi/leggibili.">ⓘ</i></label>
+    <input type="number" id="kmPerSec" value="1.8" min="0.2" max="10" step="0.1">
+
+    <label>Durata video (sec) <i class="info" title="Vedi il suggerimento calcolato nelle statistiche dopo aver caricato il GPX, in base alla lunghezza del percorso">ⓘ</i></label>
+    <input type="number" id="duration" value="30" min="5" max="600">
+    <div class="row">
+      <div>
+        <label>FPS</label>
+        <input type="number" id="fps" value="30" min="15" max="60">
+      </div>
+      <div></div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label>Pitch (°) <i class="info" title="Inclinazione camera: più alto = si vede più skyline/montagne all'orizzonte, meno vista dall'alto">ⓘ</i></label>
+        <input type="number" id="pitch" value="66" min="0" max="85">
+      </div>
+      <div>
+        <label>Zoom <i class="info" title="Più basso = vista più ampia e panoramica (meno dettagli/nomi leggibili); più alto = più vicino e leggibile ma meno d'insieme">ⓘ</i></label>
+        <input type="number" id="zoom" value="12.5" min="8" max="18" step="0.1">
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label>Ampiezza rotazione (°) <i class="info" title="Quanto la camera oscilla lateralmente rispetto alla direzione di marcia per mostrare il paesaggio circostante. 0 = disattivata">ⓘ</i></label>
+        <input type="number" id="orbitAmp" value="25" min="0" max="60">
+      </div>
+      <div>
+        <label>Periodo rotazione (s) <i class="info" title="Durata di un ciclo completo di oscillazione: numeri più alti = movimento più lento e cinematico">ⓘ</i></label>
+        <input type="number" id="orbitPeriod" value="14" min="4" max="60">
+      </div>
+    </div>
+
+    <label>Stile mappa</label>
+    <select id="style">
+      <option value="hybrid-v4">Satellite Hybrid (satellite + strade)</option>
+      <option value="satellite-v2">Satellite Plain (solo satellite)</option>
+      <option value="outdoor-v2">Outdoor (topografica)</option>
+      <option value="winter-v2">Winter</option>
+    </select>
+    <label>URL stile personalizzato <i class="info" title="Se uno stile qui sopra non si carica, incolla l'URL completo dello style.json (lo trovi nella pagina dello stile su MapTiler, sezione &quot;Use vector style&quot;)">ⓘ</i></label>
+    <input type="text" id="customStyleUrl" placeholder="facoltativo: https://api.maptiler.com/maps/.../style.json?key=...">
+
+    <label>Titolo del giro (facoltativo)</label>
+    <input type="text" id="rideTitle" placeholder="Es. Passo del Cerreto">
+
+    <div class="row" style="margin-top:14px;">
+      <div>
+        <label>Icona mezzo</label>
+        <select id="vehicleIcon">
+          <option value="🏍️" selected>Moto 🏍️</option>
+          <option value="🚗">Macchina 🚗</option>
+          <option value="🚁">Elicottero 🚁</option>
+          <option value="✈️">Aereo ✈️</option>
+        </select>
+      </div>
+      <div>
+        <label>Colore icona</label>
+        <input type="color" id="vehicleColor" value="#00e5ff" style="width:100%;height:34px;padding:2px;">
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Stile icona</label>
+        <select id="iconStyle">
+          <option value="filled" selected>Cerchio pieno + simbolo</option>
+          <option value="outline">Solo simbolo (nessun cerchio)</option>
+          <option value="dot">Solo punto colorato</option>
+        </select>
+      </div>
+      <div>
+        <label>Dimensione icona</label>
+        <input type="number" id="iconSize" value="0.55" min="0.2" max="2" step="0.05">
+      </div>
+    </div>
+    <label><input type="checkbox" id="use3DAltitude" style="width:auto;display:inline-block;margin-right:6px;">Icona in quota reale <i class="info" title="Per tracce aeree (elicottero/aereo/drone): l'icona si solleva visivamente in base alla quota reale sopra il punto più basso della traccia. Per percorsi a terra (moto/auto) lascia disattivato: l'icona resta sulla strada.">ⓘ</i></label>
+    <label>Esagerazione quota icona <i class="info" title="A zoom panoramico (11-13) ogni pixel corrisponde a decine di metri reali: un dislivello di poche centinaia di metri sposterebbe l'icona solo di pochi pixel. Alza questo valore per rendere il sollevamento visibile (non è una misura fisica esatta, è una resa visiva).">ⓘ</i></label>
+    <input type="number" id="altExaggeration" value="8" min="1" max="40" step="1">
+
+    <label>Musica di sottofondo (uno o più brani) <i class="info" title="Usa solo brani di cui hai i diritti (musica tua, royalty-free, o con licenza per questo uso). Dopo il caricamento, trascina i blocchi nella corsia 'Musica' sotto il video (avvia prima l'Anteprima) per posizionarli e tagliarli.">ⓘ</i></label>
+    <input type="file" id="musicFiles" accept="audio/*" multiple>
+    <label>Volume musica</label>
+    <input type="range" id="musicVolume" min="0" max="100" value="60">
+
+    <label>Foto nella timeline (opzionale) <i class="info" title="Copre temporaneamente la mappa con una foto a schermo intero, con breve dissolvenza in entrata/uscita. Usa il '+' nella corsia 'Foto' sotto il video per aggiungerne una al punto in cui si trova la riproduzione, oppure carica più file qui.">ⓘ</i></label>
+    <input type="file" id="photoFiles" accept="image/*" multiple>
+    <label>Durata visualizzazione foto (default, sec)</label>
+    <input type="number" id="photoDefaultDuration" value="3" min="0.5" max="15" step="0.5">
+
+    <button id="btnLoad">1. Carica traccia sulla mappa</button>
+    <button id="btnPreview" class="secondary" disabled>2. Anteprima (senza registrare)</button>
+    <button id="btnRecord" disabled>3. Registra e genera video</button>
+    <div id="recordSpeedNote" style="font-size:11px;color:#9aa4b2;text-align:center;margin-top:4px;"></div>
+
+    <div id="stats"></div>
+    <div id="status"></div>
+
+    <video id="videoOut" controls style="display:none"></video>
+    <a id="dlLink" class="dl" style="display:none">⬇️ Scarica video (.webm)</a>
+  </div>
+
+  <div id="mapWrap">
+    <div id="map"></div>
+    <canvas id="previewOverlay"></canvas>
+    <canvas id="recCanvas"></canvas>
+
+    <div id="playerBar">
+      <div class="transportRow">
+        <div class="lanePrefix">
+          <button id="btnSeekBack">⏪</button>
+          <button id="btnPlayPause">⏸</button>
+          <button id="btnSeekFwd">⏩</button>
+        </div>
+        <div class="lane seekTrack" id="seekTrack">
+          <input type="range" id="seekBar" min="0" max="1000" value="0">
+        </div>
+        <div class="laneSuffix">
+          <div class="time" id="previewTime">0.0s / 0.0s</div>
+          <div class="speedGroup">
+            <button id="spd05">x0.5</button>
+            <button id="spd1" class="active">x1</button>
+            <button id="spd15">x1.5</button>
+            <button id="spd2">x2</button>
+          </div>
+        </div>
+      </div>
+      <div class="laneRow">
+        <div class="lanePrefix"><span class="laneLabel">🎵 Musica</span></div>
+        <div class="lane" id="musicLane"></div>
+      </div>
+      <div class="laneRow">
+        <div class="lanePrefix">
+          <span class="laneLabel">🖼️ Foto</span>
+          <button id="btnAddPhoto" class="lane-add" title="Aggiungi foto al punto attuale della riproduzione">+</button>
+        </div>
+        <div class="lane" id="photoLane"></div>
+      </div>
+    </div>
+    <input type="file" id="photoFileHidden" accept="image/*" style="display:none">
+  </div>
+</div>
+
+<script>
+let map, track = null, animHandle = null, mediaRecorder, recordedChunks = [];
+const recCanvas = document.getElementById('recCanvas');
+const recCtx = recCanvas.getContext('2d');
+const prevOverlay = document.getElementById('previewOverlay');
+const prevOverlayCtx = prevOverlay.getContext('2d');
+const statusEl = document.getElementById('status');
+const statsEl = document.getElementById('stats');
+
+function setStatus(t){ statusEl.textContent = t; }
+
+// ---------- GPX PARSING ----------
+function parseGPX(xmlText, segmentMode){
+  const xml = new DOMParser().parseFromString(xmlText, 'application/xml');
+  const segments = [...xml.getElementsByTagName('trkseg')];
+  const segGroups = segments.length
+    ? segments.map(seg => [...seg.getElementsByTagName('trkpt')])
+    : [[...xml.getElementsByTagName('trkpt')]]; // fallback: nessun trkseg, tutti i trkpt insieme
+
+  const nSegmentsFound = segGroups.length;
+  let trkpts;
+  if (segmentMode === 'concat') {
+    // concatena tutti i segmenti in ordine (utile per registrazioni lunghe interrotte da pause/riavvii GPS)
+    trkpts = segGroups.flat();
+  } else {
+    // default: tiene solo il segmento più lungo (utile se il file unisce più giorni diversi)
+    segGroups.sort((a,b) => b.length - a.length);
+    trkpts = segGroups[0];
+  }
+  if (!trkpts.length) throw new Error('Nessun trkpt trovato nel GPX');
+
+  // decimazione automatica per tracce molto dense: oltre 40.000 punti manteniamo solo
+  // 1 punto ogni N, per restare fluidi nel rendering 3D senza perdere la forma del percorso
+  const originalCount = trkpts.length;
+  const MAX_PTS = 40000;
+  let decimated = false;
+  if (trkpts.length > MAX_PTS) {
+    const step = Math.ceil(trkpts.length / MAX_PTS);
+    trkpts = trkpts.filter((_,i) => i % step === 0);
+    decimated = true;
+  }
+
+  const findElevation = (pt) => {
+    const eleNode = pt.getElementsByTagName('ele')[0];
+    if (eleNode) { const v = parseFloat(eleNode.textContent); if (!isNaN(v)) return v; }
+    // fallback: cerca qualsiasi elemento discendente con nome tipo ele/alt/altitude
+    // (alcuni logger di volo/elicottero usano tag non standard, es. dentro <extensions>)
+    const all = pt.getElementsByTagName('*');
+    for (const el of all) {
+      if (/ele|alt/i.test(el.localName || el.tagName)) {
+        const v = parseFloat(el.textContent);
+        if (!isNaN(v)) return v;
+      }
+    }
+    return NaN; // nessun dato di quota trovato per questo punto
+  };
+
+  const pts = trkpts.map(pt => {
+    const lat = parseFloat(pt.getAttribute('lat'));
+    const lon = parseFloat(pt.getAttribute('lon'));
+    const timeNode = pt.getElementsByTagName('time')[0];
+    return {
+      lat, lon,
+      ele: findElevation(pt),
+      time: timeNode ? new Date(timeNode.textContent) : null
+    };
+  });
+
+  // se non troviamo NESSUN dato di quota valido, usiamo 0 per non rompere i calcoli,
+  // ma segnaliamo il problema all'utente invece di mostrare silenziosamente un profilo piatto
+  const validEleCount = pts.filter(p => !isNaN(p.ele)).length;
+  const hasElevationData = validEleCount > pts.length * 0.5; // almeno metà punti con quota valida
+  pts.forEach(p => { if (isNaN(p.ele)) p.ele = 0; });
+
+  // smoothing elevazione (media mobile) per ridurre rumore GPS
+  const win = 5;
+  const smoothed = pts.map((p,i) => {
+    const s = Math.max(0,i-win), e = Math.min(pts.length,i+win+1);
+    const slice = pts.slice(s,e).map(x=>x.ele);
+    return slice.reduce((a,b)=>a+b,0)/slice.length;
+  });
+
+  // smoothing coordinate (media mobile, finestra più ampia) per ridurre lo zig-zag GPS
+  // che altrimenti si traduce in oscillazioni laterali della camera durante il volo
+  const posWin = 8;
+  const smoothedLat = pts.map((p,i) => {
+    const s = Math.max(0,i-posWin), e = Math.min(pts.length,i+posWin+1);
+    const slice = pts.slice(s,e).map(x=>x.lat);
+    return slice.reduce((a,b)=>a+b,0)/slice.length;
+  });
+  const smoothedLon = pts.map((p,i) => {
+    const s = Math.max(0,i-posWin), e = Math.min(pts.length,i+posWin+1);
+    const slice = pts.slice(s,e).map(x=>x.lon);
+    return slice.reduce((a,b)=>a+b,0)/slice.length;
+  });
+
+  // distanza cumulativa (haversine, calcolata sulle coordinate ORIGINALI per non alterare km reali) + elevation gain
+  const cum = [0];
+  let gain = 0, loss = 0;
+  for (let i=1;i<pts.length;i++){
+    cum.push(cum[i-1] + haversine(pts[i-1], pts[i]));
+    const d = smoothed[i]-smoothed[i-1];
+    if (d > 0.3) gain += d; else if (d < -0.3) loss += -d;
+  }
+
+  const totalDist = cum[cum.length-1];
+  const hasTime = pts[0].time && pts[pts.length-1].time;
+  const durationSec = hasTime ? (pts[pts.length-1].time - pts[0].time)/1000 : null;
+
+  // profilo altimetrico ricampionato (per il disegno della sagoma nel video, ~250 punti)
+  const profileN = 250;
+  const profile = [];
+  for (let i=0;i<profileN;i++){
+    const targetDist = (i/(profileN-1)) * totalDist;
+    let lo=0, hi=cum.length-1;
+    while (lo<hi){ const mid=(lo+hi)>>1; if (cum[mid]<targetDist) lo=mid+1; else hi=mid; }
+    const idx = Math.max(1, lo);
+    const d0=cum[idx-1], d1=cum[idx], t = d1>d0 ? (targetDist-d0)/(d1-d0) : 0;
+    profile.push(smoothed[idx-1] + (smoothed[idx]-smoothed[idx-1])*t);
+  }
+
+  const minEle = Math.min(...smoothed);
+  return { pts, smoothedEle: smoothed, smoothedLat, smoothedLon, cum, totalDist, gain, loss, durationSec, nSegmentsFound, profile, decimated, originalCount, usedCount: pts.length, hasElevationData, minEle };
+}
+
+function haversine(a,b){
+  const R = 6371000;
+  const toRad = d => d*Math.PI/180;
+  const dLat = toRad(b.lat-a.lat), dLon = toRad(b.lon-a.lon);
+  const la1 = toRad(a.lat), la2 = toRad(b.lat);
+  const h = Math.sin(dLat/2)**2 + Math.cos(la1)*Math.cos(la2)*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+
+function fmtDuration(sec){
+  if (sec == null) return 'n/d';
+  const h = Math.floor(sec/3600), m = Math.round((sec%3600)/60);
+  return h>0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+// ---------- CARICAMENTO ----------
+document.getElementById('btnLoad').addEventListener('click', async () => {
+  stopPreview();
+  document.getElementById('playerBar').style.display = 'none';
+  const token = document.getElementById('token').value.trim();
+  const file = document.getElementById('gpxFile').files[0];
+  if (!token){ alert('Inserisci la tua MapTiler API key'); return; }
+  if (!file){ alert('Seleziona un file GPX'); return; }
+
+  const text = await file.text();
+  const segmentMode = document.getElementById('segmentMode').value;
+  track = parseGPX(text, segmentMode);
+
+  // suggerimento di durata per un ritmo leggibile (in base al valore "km percepiti al secondo" impostato)
+  const kmPerSec = parseFloat(document.getElementById('kmPerSec').value) || 1.8;
+  const suggestedDuration = Math.round(track.totalDist/1000 / kmPerSec);
+
+  statsEl.innerHTML = `
+    <b>${document.getElementById('rideTitle').value || file.name}</b><br>
+    Distanza: ${(track.totalDist/1000).toFixed(1)} km<br>
+    Dislivello +: ${Math.round(track.gain)} m &nbsp; -: ${Math.round(track.loss)} m<br>
+    Durata traccia: ${fmtDuration(track.durationSec)}
+    ${track.nSegmentsFound > 1 ? `<br><span style="color:#e8b400">⚠ Il file contiene ${track.nSegmentsFound} segmenti — ${segmentMode==='concat' ? 'li ho concatenati tutti in ordine.' : 'sto usando solo il più lungo (cambia modalità sopra se serve concatenarli).'}</span>` : ''}
+    ${track.decimated ? `<br><span style="color:#9ecbff">ℹ Traccia molto densa (${track.originalCount.toLocaleString('it-IT')} punti): ridotta a ${track.usedCount.toLocaleString('it-IT')} per restare fluida, la forma del percorso non cambia sensibilmente.</span>` : ''}
+    ${!track.hasElevationData ? `<br><span style="color:#ff8080">⚠ Non trovo dati di quota validi in questo GPX (tag &lt;ele&gt; assente/vuoto per la maggior parte dei punti). Profilo altimetrico e "Quota 3D" non saranno affidabili. Se il tuo logger salva l'altitudine in un formato diverso, mandami un estratto del file e sistemiamo il parsing.</span>` : ''}
+    <br><span style="color:#9ecbff">💡 Per leggere bene le località: durata video consigliata ≈ ${suggestedDuration}s (regola tu il campo "Durata video" qui sopra)</span>
+  `;
+
+  const styleId = document.getElementById('style').value;
+  const customUrl = document.getElementById('customStyleUrl').value.trim();
+  const styleUrl = customUrl || `https://api.maptiler.com/maps/${styleId}/style.json?key=${token}`;
+  if (map) map.remove();
+  map = new maplibregl.Map({
+    container: 'map',
+    style: styleUrl,
+    center: [track.pts[0].lon, track.pts[0].lat],
+    zoom: parseFloat(document.getElementById('zoom').value),
+    pitch: parseFloat(document.getElementById('pitch').value),
+    bearing: 0,
+    maxPitch: 85,
+    antialias: true,
+    preserveDrawingBuffer: true // necessario per catturare i frame dal canvas
+  });
+
+  map.on('error', (e) => {
+    setStatus('Errore mappa: ' + (e.error?.message || JSON.stringify(e.error || e)));
+    console.error('Mapbox GL error:', e);
+  });
+
+  map.on('load', () => {
+    try {
+      map.addSource('mapbox-dem', {
+        type: 'raster-dem',
+        url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${token}`,
+        encoding: 'mapbox',
+        tileSize: 512, maxzoom: 14
+      });
+      map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.3 });
+      try { map.setFog({}); } catch(fogErr) { console.warn('setFog non disponibile, continuo senza:', fogErr); }
+
+      const geojson = {
+        type: 'Feature', geometry: {
+          type: 'LineString',
+          coordinates: track.pts.map(p => [p.lon, p.lat, p.ele])
+        }
+      };
+      map.addSource('route', { type: 'geojson', data: geojson });
+      map.addSource('routeDone', { type: 'geojson', data: { type:'Feature', geometry:{type:'LineString',coordinates:[]} } });
+
+      map.addLayer({ id:'route-full', type:'line', source:'route',
+        paint:{ 'line-color':'#ffcc00', 'line-width':2, 'line-opacity':0.35 } });
+      map.addLayer({ id:'route-done', type:'line', source:'routeDone',
+        paint:{ 'line-color':'#ffcc00', 'line-width':4 } });
+
+      setStatus('Traccia caricata. Premi Anteprima o Registra.');
+    } catch (err) {
+      console.error(err);
+      setStatus('Errore durante il disegno del percorso: ' + err.message + ' (i pulsanti restano comunque attivi, la telecamera dovrebbe funzionare)');
+    } finally {
+      document.getElementById('btnPreview').disabled = false;
+      document.getElementById('btnRecord').disabled = false;
+    }
+  });
+});
+
+// ---------- ANIMAZIONE (condivisa da anteprima e registrazione) ----------
+// Ricampiona il percorso in N frame equidistanti sulla distanza cumulativa
+function resamplePath(nFrames){
+  const out = [];
+  for (let i=0;i<nFrames;i++){
+    const targetDist = (i/(nFrames-1)) * track.totalDist;
+    // trova segmento
+    let lo=0, hi=track.cum.length-1;
+    while (lo<hi){ const mid=(lo+hi)>>1; if (track.cum[mid]<targetDist) lo=mid+1; else hi=mid; }
+    const idx = Math.max(1, lo);
+    const p0 = track.pts[idx-1], p1 = track.pts[idx];
+    const d0 = track.cum[idx-1], d1 = track.cum[idx];
+    const t = d1>d0 ? (targetDist-d0)/(d1-d0) : 0;
+    out.push({
+      lat: p0.lat + (p1.lat-p0.lat)*t, // posizione reale (per la linea disegnata)
+      lon: p0.lon + (p1.lon-p0.lon)*t,
+      camLat: track.smoothedLat[idx-1] + (track.smoothedLat[idx]-track.smoothedLat[idx-1])*t, // posizione smussata (per la camera)
+      camLon: track.smoothedLon[idx-1] + (track.smoothedLon[idx]-track.smoothedLon[idx-1])*t,
+      ele: track.smoothedEle[idx-1] + (track.smoothedEle[idx]-track.smoothedEle[idx-1])*t,
+      dist: targetDist
+    });
+  }
+  return out;
+}
+
+function bearingBetween(a,b){
+  const toRad=d=>d*Math.PI/180, toDeg=r=>r*180/Math.PI;
+  const y = Math.sin(toRad(b.lon-a.lon))*Math.cos(toRad(b.lat));
+  const x = Math.cos(toRad(a.lat))*Math.sin(toRad(b.lat)) - Math.sin(toRad(a.lat))*Math.cos(toRad(b.lat))*Math.cos(toRad(b.lon-a.lon));
+  return (toDeg(Math.atan2(y,x))+360)%360;
+}
+
+// Calcola l'offset verticale in pixel schermo dovuto alla quota (altezza sopra il riferimento
+// "suolo" della traccia). Approssimazione: la quota si "proietta" sullo schermo in proporzione
+// al pitch della camera (guardando dritto verso il basso, pitch=0, l'altezza non è percepibile;
+// guardando quasi all'orizzonte, pitch alto, l'altezza sposta molto l'icona verso l'alto).
+function altitudeOffsetPx(altitudeMeters, lat, zoom, pitchDeg){
+  const metersPerPixel = 156543.03392 * Math.cos(lat*Math.PI/180) / Math.pow(2, zoom);
+  return (altitudeMeters / metersPerPixel) * Math.sin(pitchDeg*Math.PI/180);
+}
+
+// Disegna l'icona del mezzo su un canvas 2D qualsiasi (usata sia per l'anteprima live
+// che per il video registrato), in un punto schermo già calcolato.
+function drawVehicleIcon(ctx, x, y, scale, emoji, color, style, sizeFactor){
+  const r = 16*scale*sizeFactor;
+  ctx.save();
+
+  if (style === 'dot') {
+    // solo un punto colorato, nessun simbolo
+    ctx.beginPath();
+    ctx.arc(x, y, r*0.45, 0, Math.PI*2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.lineWidth = 1.5*scale;
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
+
+  if (style === 'outline') {
+    // solo il simbolo, nessun cerchio
+    ctx.font = `${22*scale*sizeFactor}px system-ui`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 4*scale;
+    ctx.fillStyle = color;
+    ctx.fillText(emoji, x, y);
+    ctx.restore();
+    return;
+  }
+
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI*2);
+  {
+    // cerchio pieno (default)
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.92;
+    ctx.fill();
+    ctx.lineWidth = 2*scale;
+    ctx.strokeStyle = '#fff';
+    ctx.globalAlpha = 1;
+    ctx.stroke();
+  }
+
+  ctx.font = `${20*scale*sizeFactor}px system-ui`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#fff';
+  ctx.fillText(emoji, x, y+1*scale);
+  ctx.restore();
+}
+
+// Calcola posizione (x,y in pixel CSS relativi al div mappa) e altezza-sopra-suolo per un punto del percorso
+function vehicleScreenPos(cur, zoom, pitch){
+  const groundPx = map.project([cur.lon, cur.lat]);
+  const applyAlt = document.getElementById('use3DAltitude').checked;
+  const exaggeration = parseFloat(document.getElementById('altExaggeration').value) || 1;
+  const altAboveGround = applyAlt ? Math.max(0, cur.ele - track.minEle) * exaggeration : 0;
+  const offset = altitudeOffsetPx(altAboveGround, cur.lat, zoom, pitch);
+  return { x: groundPx.x, y: groundPx.y - offset, groundX: groundPx.x, groundY: groundPx.y };
+}
+
+// Disegna una linea tratteggiata sfumata dal terreno fino all'icona (mostra la quota attuale
+// senza lasciare tracce: viene ridisegnata da zero ogni fotogramma, quindi non si accumula)
+function drawAltitudeLine(ctx, gx, gy, ix, iy, color, scale){
+  const dist = Math.hypot(gx-ix, gy-iy);
+  if (dist < 3) return; // icona già a terra, nulla da mostrare
+
+  ctx.save();
+  const grad = ctx.createLinearGradient(ix, iy, gx, gy);
+  grad.addColorStop(0, color);
+  grad.addColorStop(1, 'rgba(255,255,255,0)'); // sfuma verso il terreno
+  ctx.strokeStyle = grad;
+  ctx.lineWidth = 2*scale;
+  ctx.setLineDash([5*scale, 5*scale]);
+  ctx.beginPath();
+  ctx.moveTo(ix, iy);
+  ctx.lineTo(gx, gy);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // puntino "ombra" a terra
+  ctx.beginPath();
+  ctx.arc(gx, gy, 4*scale, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fill();
+  ctx.restore();
+}
+
+// Converte un istante della timeline VIDEO in un istante della timeline di VOLO (percorso),
+// congelando l'avanzamento durante gli intervalli in cui è attiva una foto — il volo
+// riprende esattamente da dove si trovava quando la foto termina.
+function videoTimeToPathTime(videoTime){
+  const sorted = [...photoTracks].sort((a,b) => a.videoStart - b.videoStart);
+  let subtracted = 0;
+  for (const photo of sorted) {
+    if (videoTime <= photo.videoStart) break;
+    if (videoTime >= photo.videoStart + photo.duration) {
+      subtracted += photo.duration; // foto già passata: tutto il suo tempo non conta per il volo
+    } else {
+      subtracted += (videoTime - photo.videoStart); // dentro la foto adesso: congela qui
+      break;
+    }
+  }
+  return Math.max(0, videoTime - subtracted);
+}
+
+function computePathIndex(videoTimeSec, totalFrames, fps){
+  const pt = videoTimeToPathTime(videoTimeSec);
+  return Math.max(0, Math.min(totalFrames-1, Math.round(pt*fps)));
+}
+
+// Crea (se non esiste) la barra verticale della playhead in una corsia, e la riporta in cima
+// (ri-appesa per ultima) così resta sopra i blocchi anche dopo un re-render della corsia
+function ensureLanePlayhead(laneId){
+  const lane = document.getElementById(laneId);
+  let ph = lane.querySelector('.lane-playhead');
+  if (!ph) {
+    ph = document.createElement('div');
+    ph.className = 'lane-playhead';
+  }
+  lane.appendChild(ph);
+  return ph;
+}
+
+function updateLanePlayheads(videoTimeSec){
+  const totalDur = parseFloat(document.getElementById('duration').value) || 60;
+  const leftPct = Math.max(0, Math.min(100, videoTimeSec/totalDur*100));
+  ['seekTrack','musicLane','photoLane'].forEach(id => {
+    const ph = document.getElementById(id)?.querySelector('.lane-playhead');
+    if (ph) ph.style.left = leftPct + '%';
+  });
+}
+
+// Click su una corsia (fuori dai blocchi) sposta la riproduzione in quel punto, come in un editor video
+function laneClickToSeek(laneEl, e){
+  if (e.target.closest('.lane-block')) return;
+  if (!preview) return;
+  const rect = laneEl.getBoundingClientRect();
+  const frac = (e.clientX - rect.left) / rect.width;
+  seekPreviewTo(Math.round(frac * (preview.totalFrames-1)));
+}
+document.getElementById('musicLane').addEventListener('click', e => laneClickToSeek(e.currentTarget, e));
+document.getElementById('photoLane').addEventListener('click', e => laneClickToSeek(e.currentTarget, e));
+
+// Calamita: arrotonda un valore in secondi al candidato più vicino (0, durata totale, playhead,
+// bordi di altri blocchi) se entro una piccola soglia — utile per accostare i blocchi senza buchi
+function snapValue(value, candidates, thresholdSec){
+  let best = value, bestDist = thresholdSec;
+  for (const c of candidates) {
+    const d = Math.abs(value - c);
+    if (d < bestDist) { bestDist = d; best = c; }
+  }
+  return best;
+}
+
+// costruisce i parametri di animazione (percorso ricampionato, lookahead, ecc.) letti dai controlli attuali
+function buildAnimParams(durationOverrideSec){
+  const duration = durationOverrideSec != null ? durationOverrideSec : parseFloat(document.getElementById('duration').value);
+  const fps = parseInt(document.getElementById('fps').value);
+  const pitch = parseFloat(document.getElementById('pitch').value);
+  const zoom = parseFloat(document.getElementById('zoom').value);
+  const orbitAmp = parseFloat(document.getElementById('orbitAmp').value);
+  const orbitPeriod = parseFloat(document.getElementById('orbitPeriod').value);
+  const totalFrames = Math.round(duration * fps);
+  const path = resamplePath(totalFrames);
+  const title = document.getElementById('rideTitle').value || 'Il mio giro';
+  // lookahead come frazione dell'intero percorso: la camera segue l'andamento GENERALE
+  // del tragitto, non ogni singola curva locale (lettura d'insieme tipo panoramica)
+  const lookAheadFrames = Math.max(3, Math.round(totalFrames * 0.08));
+  return { duration, fps, pitch, zoom, orbitAmp, orbitPeriod, totalFrames, path, title, lookAheadFrames };
+}
+
+// avanza di un passo il filtro passa-basso del bearing (usato sia in registrazione che in anteprima)
+function stepBearing(sb, i, p){
+  const cur = p.path[i];
+  const next = p.path[Math.min(i+p.lookAheadFrames, p.totalFrames-1)];
+  const target = bearingBetween({lat:cur.camLat,lon:cur.camLon}, {lat:next.camLat,lon:next.camLon});
+  let diff = ((target - sb + 540) % 360) - 180;
+  return (sb + diff*0.035 + 360) % 360;
+}
+
+function initialBearing(p){
+  return bearingBetween(
+    {lat:p.path[0].camLat, lon:p.path[0].camLon},
+    {lat:p.path[Math.min(p.lookAheadFrames,p.totalFrames-1)].camLat, lon:p.path[Math.min(p.lookAheadFrames,p.totalFrames-1)].camLon}
+  );
+}
+
+function cameraForFrame(p, i, smoothBearing){
+  const cur = p.path[i];
+  const t = i / p.fps;
+  const orbitOffset = p.orbitAmp * Math.sin((2*Math.PI*t)/p.orbitPeriod);
+  const displayBearing = (smoothBearing + orbitOffset + 360) % 360;
+  return { center:[cur.camLon, cur.camLat], zoom:p.zoom, pitch:p.pitch, bearing:displayBearing };
+}
+
+function updateRouteDoneUpTo(p, i){
+  const doneSrc = map.getSource('routeDone');
+  if (doneSrc) {
+    doneSrc.setData({
+      type:'Feature', geometry:{ type:'LineString',
+        coordinates: p.path.slice(0,i+1).map(pt=>[pt.lon,pt.lat]) }
+    });
+  }
+}
+
+// ---------- REGISTRAZIONE (lineare, dall'inizio alla fine, per il file video) ----------
+async function recordVideo(){
+  stopPreview();
+  const baseDuration = parseFloat(document.getElementById('duration').value);
+  const effectiveDuration = baseDuration / selectedSpeed; // x1.5/x2 = video più corto e più rapido, x0.5 = più lungo e lento
+  const p = buildAnimParams(effectiveDuration);
+  let smoothBearing = initialBearing(p);
+
+  const [resW, resH] = document.getElementById('resolution').value.split('x').map(Number);
+  const bitrateMbps = parseFloat(document.getElementById('bitrate').value) || 8;
+  recCanvas.width = resW; recCanvas.height = resH;
+  recCanvas.style.display = 'block';
+  recordedChunks = [];
+  const videoStream = recCanvas.captureStream(p.fps);
+
+  // --- musica di sottofondo (posizionamento libero per brano, opzionale) ---
+  const hasMusic = musicTracks.some(t => (t.trimEnd - t.trimStart) > 0.05);
+  let tracks = [...videoStream.getVideoTracks()];
+  let scheduledSources = [];
+  let recGainNode = null;
+
+  if (hasMusic) {
+    const ctx = ensureAudioCtx();
+    const dest = ctx.createMediaStreamDestination();
+    recGainNode = ctx.createGain();
+    const volume = (parseFloat(document.getElementById('musicVolume').value) || 60) / 100;
+    recGainNode.gain.value = volume;
+    recGainNode.connect(dest);
+
+    // la musica resta sempre al ritmo/tono normale (playbackRate=1): solo il video
+    // accelera/rallenta con x1.5/x2/x0.5, la musica no. Le posizioni restano quelle
+    // impostate sulla timeline nominale, semplicemente tagliate se cadono oltre la
+    // fine del video (più corto se accelerato, più lungo se rallentato).
+    const startAt = ctx.currentTime + 0.05; // piccolo margine di sicurezza
+    musicTracks.forEach(track => {
+      const length = track.trimEnd - track.trimStart;
+      if (length <= 0.05) return;
+      if (track.videoStart >= effectiveDuration) return; // parte dopo la fine del video: salta
+      const playLen = Math.min(length, effectiveDuration - track.videoStart);
+      const source = ctx.createBufferSource();
+      source.buffer = track.buffer;
+      source.connect(recGainNode);
+      source.start(startAt + track.videoStart, track.trimStart, playLen);
+      scheduledSources.push(source);
+    });
+
+    // dissolvenza finale (ultimi 2 secondi) per non tagliare la musica di netto
+    const fadeStart = startAt + Math.max(0, effectiveDuration - 2);
+    recGainNode.gain.setValueAtTime(volume, fadeStart);
+    recGainNode.gain.linearRampToValueAtTime(0, fadeStart + 2);
+
+    tracks.push(...dest.stream.getAudioTracks());
+  }
+
+  const stream = new MediaStream(tracks);
+  const mimeCandidates = hasMusic
+    ? ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm']
+    : ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+  const mime = mimeCandidates.find(m => MediaRecorder.isTypeSupported(m)) || '';
+  mediaRecorder = new MediaRecorder(stream, {
+    ...(mime ? { mimeType: mime } : {}),
+    videoBitsPerSecond: bitrateMbps * 1_000_000
+  });
+  mediaRecorder.ondataavailable = e => { if (e.data.size>0) recordedChunks.push(e.data); };
+  mediaRecorder.start();
+
+  let lastPathIndex = 0;
+  for (let i=0;i<p.totalFrames;i++){
+    const videoTimeSec = i/p.fps;
+    const pathIndex = computePathIndex(videoTimeSec, p.totalFrames, p.fps);
+    while (lastPathIndex < pathIndex) { lastPathIndex++; smoothBearing = stepBearing(smoothBearing, lastPathIndex, p); }
+    map.jumpTo(cameraForFrame(p, pathIndex, smoothBearing));
+    updateRouteDoneUpTo(p, pathIndex);
+    await new Promise(r => requestAnimationFrame(r)); // attende il render della mappa
+    drawOverlayFrame({ title:p.title, cur:p.path[pathIndex], progress:(pathIndex+1)/p.totalFrames, zoom:p.zoom, pitch:p.pitch, timeSec:videoTimeSec });
+  }
+
+  await new Promise(r => setTimeout(r, 300)); // ultimo frame
+  mediaRecorder.stop();
+  await new Promise(r => mediaRecorder.onstop = r);
+  scheduledSources.forEach(s => { try { s.stop(); } catch(e){} });
+
+  const blob = new Blob(recordedChunks, { type:'video/webm' });
+  const url = URL.createObjectURL(blob);
+  const v = document.getElementById('videoOut');
+  v.src = url; v.style.display='block';
+  const a = document.getElementById('dlLink');
+  a.href = url; a.download = 'giro_flyover.webm'; a.style.display='inline-block';
+  setStatus('Video generato! Anteprima qui sotto, poi scaricalo.');
+}
+
+// ---------- ANTEPRIMA INTERATTIVA (play/pausa/velocità/seek, senza registrare) ----------
+// ---------- MUSICA DI SOTTOFONDO (multi-brano, con taglio inizio/fine) ----------
+let audioCtx = null; // contesto audio condiviso (decodifica + anteprima + registrazione)
+let musicTracks = []; // { id, name, buffer, duration, trimStart, trimEnd }
+let musicGain = null; // nodo di volume per l'ascolto live in anteprima
+let musicPreviewState = { sources:[], activeKey:'', speed:null };
+let musicIdSeq = 0;
+
+function ensureAudioCtx(){
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (!musicGain) {
+    musicGain = audioCtx.createGain();
+    musicGain.gain.value = (parseFloat(document.getElementById('musicVolume').value) || 60) / 100;
+    musicGain.connect(audioCtx.destination);
+  }
+  return audioCtx;
+}
+
+document.getElementById('musicVolume').addEventListener('input', () => {
+  if (musicGain) musicGain.gain.value = (parseFloat(document.getElementById('musicVolume').value) || 60) / 100;
+});
+
+document.getElementById('musicFiles').addEventListener('change', async (e) => {
+  const ctx = ensureAudioCtx();
+  for (const file of [...e.target.files]) {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = await ctx.decodeAudioData(arrayBuffer);
+      const totalDur = parseFloat(document.getElementById('duration').value) || 60;
+      const defaultStart = musicTracks.reduce((max,t) => Math.max(max, t.videoStart + (t.trimEnd-t.trimStart)), 0);
+      const availableSpace = Math.max(0.5, totalDur - defaultStart);
+      const initialTrimEnd = Math.min(buffer.duration, availableSpace);
+      musicTracks.push({ id: musicIdSeq++, name: file.name, buffer, duration: buffer.duration, trimStart: 0, trimEnd: initialTrimEnd, videoStart: defaultStart });
+    } catch (err) {
+      console.error('Errore decodifica audio', file.name, err);
+      setStatus(`Impossibile leggere il file audio "${file.name}" — formato non supportato?`);
+    }
+  }
+  e.target.value = ''; // permette di ricaricare lo stesso file se serve
+  renderMusicLane();
+});
+
+function fmtMinSec(sec){
+  const m = Math.floor(sec/60), s = Math.floor(sec%60);
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+function renderMusicLane(){
+  const lane = document.getElementById('musicLane');
+  lane.innerHTML = '';
+  const totalDur = parseFloat(document.getElementById('duration').value) || 60;
+
+  musicTracks.forEach((t, idx) => {
+    const length = t.trimEnd - t.trimStart;
+    const leftPct = (t.videoStart/totalDur*100);
+    const widthPct = Math.max(1, Math.min(100-leftPct, length/totalDur*100)); // mai oltre il bordo destro della corsia
+    const block = document.createElement('div');
+    block.className = 'lane-block music';
+    block.style.left = leftPct + '%';
+    block.style.width = widthPct + '%';
+    block.title = `${t.name}: ${fmtMinSec(t.videoStart)} → ${fmtMinSec(t.videoStart+length)}`;
+    const label = document.createElement('div');
+    label.className = 'lane-block-label';
+    label.textContent = t.name;
+    block.appendChild(label);
+
+    const remove = document.createElement('div');
+    remove.className = 'lane-remove';
+    remove.textContent = '✕';
+    remove.addEventListener('mousedown', e => e.stopPropagation());
+    remove.addEventListener('click', () => { musicTracks.splice(idx,1); renderMusicLane(); });
+    block.appendChild(remove);
+
+    const hLeft = document.createElement('div');
+    hLeft.className = 'resize-handle left';
+    const hRight = document.createElement('div');
+    hRight.className = 'resize-handle right';
+    block.appendChild(hLeft); block.appendChild(hRight);
+
+    hLeft.addEventListener('mousedown', e => startMusicDrag(e, idx, 'left'));
+    hRight.addEventListener('mousedown', e => startMusicDrag(e, idx, 'right'));
+    block.addEventListener('mousedown', e => {
+      if (e.target === hLeft || e.target === hRight || e.target === remove) return;
+      startMusicDrag(e, idx, 'move');
+    });
+
+    lane.appendChild(block);
+  });
+
+  ensureLanePlayhead('musicLane');
+}
+
+function startMusicDrag(e, idx, mode){
+  e.preventDefault();
+  const lane = document.getElementById('musicLane');
+  const laneRect = lane.getBoundingClientRect();
+  const totalDur = parseFloat(document.getElementById('duration').value) || 60;
+  const t = musicTracks[idx];
+  const startX = e.clientX;
+  const orig = { videoStart:t.videoStart, trimStart:t.trimStart, trimEnd:t.trimEnd };
+  const snapThreshold = (8 / laneRect.width) * totalDur; // ~8px di tolleranza
+  const snapCandidates = [0, totalDur];
+  if (preview) snapCandidates.push(preview.i/preview.fps);
+  musicTracks.forEach((other, oIdx) => {
+    if (oIdx === idx) return;
+    snapCandidates.push(other.videoStart, other.videoStart + (other.trimEnd-other.trimStart));
+  });
+
+  function onMove(ev){
+    const dxSec = ((ev.clientX - startX) / laneRect.width) * totalDur;
+    if (mode === 'move') {
+      const length = orig.trimEnd - orig.trimStart;
+      let newStart = Math.max(0, Math.min(totalDur-length, orig.videoStart + dxSec));
+      newStart = snapValue(newStart, [...snapCandidates, ...snapCandidates.map(c=>c-length)], snapThreshold);
+      t.videoStart = Math.max(0, Math.min(totalDur-length, newStart));
+    } else if (mode === 'left') {
+      // ancora il punto finale (videoStart+length e trimEnd), sposta l'inizio
+      const endAnchorVideo = orig.videoStart + (orig.trimEnd - orig.trimStart);
+      let newVideoStartRaw = snapValue(orig.videoStart + dxSec, snapCandidates, snapThreshold);
+      let newTrimStart = Math.max(0, Math.min(orig.trimEnd - 0.3, orig.trimStart + (newVideoStartRaw-orig.videoStart)));
+      const newLength = orig.trimEnd - newTrimStart;
+      let newVideoStart = endAnchorVideo - newLength;
+      if (newVideoStart < 0) { newVideoStart = 0; }
+      t.trimStart = newTrimStart;
+      t.videoStart = newVideoStart;
+    } else if (mode === 'right') {
+      // ancora inizio (videoStart, trimStart), estende/riduce la fine
+      const rawEndVideo = snapValue(orig.videoStart + (orig.trimEnd-orig.trimStart) + dxSec, snapCandidates, snapThreshold);
+      let newTrimEnd = Math.max(orig.trimStart + 0.3, Math.min(t.duration, orig.trimStart + (rawEndVideo - orig.videoStart)));
+      const newLength = newTrimEnd - orig.trimStart;
+      if (orig.videoStart + newLength > totalDur) newTrimEnd = orig.trimStart + (totalDur - orig.videoStart);
+      t.trimEnd = newTrimEnd;
+    }
+    renderMusicLane();
+  }
+  function onUp(){
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+  }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+// Trova tutte le tracce "attive" nel punto timeSec del video, in base al loro attacco impostato
+// (più tracce possono sovrapporsi: verranno mixate insieme, sia in anteprima che in registrazione)
+function computeActiveTracksAt(timeSec){
+  const active = [];
+  musicTracks.forEach((t, trackIndex) => {
+    const length = t.trimEnd - t.trimStart;
+    if (length <= 0.05) return;
+    if (timeSec >= t.videoStart && timeSec < t.videoStart + length) {
+      active.push({
+        trackIndex,
+        offsetInTrack: t.trimStart + (timeSec - t.videoStart),
+        remaining: (t.videoStart + length) - timeSec
+      });
+    }
+  });
+  return active;
+}
+
+function stopMusicPreview(){
+  (musicPreviewState.sources || []).forEach(s => { try { s.stop(); } catch(e){} });
+  musicPreviewState = { sources:[], activeKey:'', speed:null };
+}
+
+// Chiamata ad ogni frame renderizzato dell'anteprima: fa ripartire le sorgenti solo quando
+// cambia l'insieme di tracce attive, la velocità, o c'è un salto ampio (seek) rispetto all'atteso
+// "Orologio" musicale indipendente dalla velocità video: avanza sempre in tempo reale (x1),
+// e viene semplicemente riallineato (non accelerato) quando fai un salto/seek o riprendi il play.
+let musicAnchorWallTime = null;
+let musicAnchorVideoTime = 0;
+
+function resetMusicAnchor(videoTimeSec){
+  musicAnchorWallTime = performance.now()/1000;
+  musicAnchorVideoTime = videoTimeSec;
+}
+
+function getMusicVirtualTime(){
+  if (musicAnchorWallTime == null) return musicAnchorVideoTime;
+  return musicAnchorVideoTime + (performance.now()/1000 - musicAnchorWallTime);
+}
+
+function syncMusicPreview(playing){
+  if (!musicTracks.length) return;
+
+  if (!playing) {
+    if ((musicPreviewState.sources||[]).length) stopMusicPreview();
+    return;
+  }
+
+  const timeSec = getMusicVirtualTime();
+  const active = computeActiveTracksAt(timeSec);
+
+  const key = active.map(a => a.trackIndex).join(',');
+  const drift = active.some(a => {
+    const expected = (musicPreviewState.expectedOffsets || {})[a.trackIndex];
+    return expected == null || Math.abs(expected - a.offsetInTrack) > 0.4;
+  });
+  const needsRestart = key !== musicPreviewState.activeKey || drift;
+  if (!needsRestart) return;
+
+  (musicPreviewState.sources || []).forEach(s => { try { s.stop(); } catch(e){} });
+
+  if (!active.length) {
+    musicPreviewState = { sources:[], activeKey:'', expectedOffsets:{} };
+    return;
+  }
+
+  const ctx = ensureAudioCtx();
+  const sources = [];
+  const expectedOffsets = {};
+  active.forEach(a => {
+    const track = musicTracks[a.trackIndex];
+    const source = ctx.createBufferSource();
+    source.buffer = track.buffer;
+    // playbackRate resta sempre 1: la musica avanza in tempo reale, mai accelerata/rallentata
+    source.connect(musicGain);
+    source.start(0, a.offsetInTrack, a.remaining);
+    sources.push(source);
+    expectedOffsets[a.trackIndex] = a.offsetInTrack;
+  });
+
+  musicPreviewState = { sources, activeKey:key, expectedOffsets };
+}
+
+// ---------- FOTO NELLA TIMELINE ----------
+let photoTracks = []; // { id, name, img, videoStart, duration }
+let photoIdSeq = 0;
+
+function loadImage(file){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+document.getElementById('photoFiles').addEventListener('change', async (e) => {
+  for (const file of [...e.target.files]) {
+    try {
+      const img = await loadImage(file);
+      const defaultDur = parseFloat(document.getElementById('photoDefaultDuration').value) || 3;
+      const defaultStart = photoTracks.reduce((max,p) => Math.max(max, p.videoStart + p.duration), 0);
+      photoTracks.push({ id: photoIdSeq++, name: file.name, img, videoStart: defaultStart, duration: defaultDur });
+    } catch (err) {
+      console.error('Errore caricamento immagine', file.name, err);
+      setStatus(`Impossibile leggere l'immagine "${file.name}".`);
+    }
+  }
+  e.target.value = '';
+  renderPhotoLane();
+});
+
+// pulsante "+" nella corsia: aggiunge una foto esattamente al punto in cui si trova la riproduzione
+document.getElementById('btnAddPhoto').addEventListener('click', () => {
+  document.getElementById('photoFileHidden').click();
+});
+document.getElementById('photoFileHidden').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const img = await loadImage(file);
+    const defaultDur = parseFloat(document.getElementById('photoDefaultDuration').value) || 3;
+    const totalDur = parseFloat(document.getElementById('duration').value) || 60;
+    const playheadSec = preview ? preview.i / preview.fps : 0;
+    const videoStart = Math.max(0, Math.min(totalDur - defaultDur, playheadSec));
+    photoTracks.push({ id: photoIdSeq++, name: file.name, img, videoStart, duration: defaultDur });
+  } catch (err) {
+    console.error('Errore caricamento immagine', file.name, err);
+    setStatus(`Impossibile leggere l'immagine "${file.name}".`);
+  }
+  e.target.value = '';
+  renderPhotoLane();
+});
+
+function renderPhotoLane(){
+  const lane = document.getElementById('photoLane');
+  lane.innerHTML = '';
+  const totalDur = parseFloat(document.getElementById('duration').value) || 60;
+
+  photoTracks.forEach((p, idx) => {
+    const leftPct = (p.videoStart/totalDur*100);
+    const widthPct = Math.max(1, Math.min(100-leftPct, p.duration/totalDur*100));
+    const block = document.createElement('div');
+    block.className = 'lane-block photo';
+    block.style.left = leftPct + '%';
+    block.style.width = widthPct + '%';
+    block.title = `${p.name}: ${fmtMinSec(p.videoStart)} → ${fmtMinSec(p.videoStart+p.duration)}`;
+
+    const thumb = document.createElement('img');
+    thumb.className = 'thumb';
+    thumb.src = p.img.src;
+    block.appendChild(thumb);
+
+    const label = document.createElement('div');
+    label.className = 'lane-block-label';
+    label.textContent = p.name;
+    block.appendChild(label);
+
+    const remove = document.createElement('div');
+    remove.className = 'lane-remove';
+    remove.textContent = '✕';
+    remove.addEventListener('mousedown', e => e.stopPropagation());
+    remove.addEventListener('click', () => { photoTracks.splice(idx,1); renderPhotoLane(); });
+    block.appendChild(remove);
+
+    const hLeft = document.createElement('div');
+    hLeft.className = 'resize-handle left';
+    const hRight = document.createElement('div');
+    hRight.className = 'resize-handle right';
+    block.appendChild(hLeft); block.appendChild(hRight);
+
+    hLeft.addEventListener('mousedown', e => startPhotoDrag(e, idx, 'left'));
+    hRight.addEventListener('mousedown', e => startPhotoDrag(e, idx, 'right'));
+    block.addEventListener('mousedown', e => {
+      if (e.target === hLeft || e.target === hRight || e.target === remove) return;
+      startPhotoDrag(e, idx, 'move');
+    });
+
+    lane.appendChild(block);
+  });
+
+  ensureLanePlayhead('photoLane');
+}
+
+function startPhotoDrag(e, idx, mode){
+  e.preventDefault();
+  const lane = document.getElementById('photoLane');
+  const laneRect = lane.getBoundingClientRect();
+  const totalDur = parseFloat(document.getElementById('duration').value) || 60;
+  const p = photoTracks[idx];
+  const startX = e.clientX;
+  const orig = { videoStart:p.videoStart, duration:p.duration };
+  const snapThreshold = (8 / laneRect.width) * totalDur;
+  const snapCandidates = [0, totalDur];
+  if (preview) snapCandidates.push(preview.i/preview.fps);
+  photoTracks.forEach((other, oIdx) => {
+    if (oIdx === idx) return;
+    snapCandidates.push(other.videoStart, other.videoStart + other.duration);
+  });
+
+  function onMove(ev){
+    const dxSec = ((ev.clientX - startX) / laneRect.width) * totalDur;
+    if (mode === 'move') {
+      let newStart = Math.max(0, Math.min(totalDur-orig.duration, orig.videoStart + dxSec));
+      newStart = snapValue(newStart, [...snapCandidates, ...snapCandidates.map(c=>c-orig.duration)], snapThreshold);
+      p.videoStart = Math.max(0, Math.min(totalDur-orig.duration, newStart));
+    } else if (mode === 'left') {
+      const endAnchor = orig.videoStart + orig.duration;
+      let newStart = snapValue(orig.videoStart + dxSec, snapCandidates, snapThreshold);
+      newStart = Math.max(0, Math.min(endAnchor - 0.3, newStart));
+      p.videoStart = newStart;
+      p.duration = endAnchor - newStart;
+    } else if (mode === 'right') {
+      let rawEnd = snapValue(orig.videoStart + orig.duration + dxSec, snapCandidates, snapThreshold);
+      let newDuration = Math.max(0.3, Math.min(15, rawEnd - orig.videoStart));
+      if (orig.videoStart + newDuration > totalDur) newDuration = totalDur - orig.videoStart;
+      p.duration = newDuration;
+    }
+    renderPhotoLane();
+  }
+  function onUp(){
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+  }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+// Trova la foto attiva nel punto timeSec (con una breve dissolvenza in entrata/uscita)
+function getActivePhoto(timeSec){
+  for (const p of photoTracks) {
+    if (timeSec >= p.videoStart && timeSec < p.videoStart + p.duration) {
+      const t = timeSec - p.videoStart;
+      const fade = Math.min(0.4, p.duration/2);
+      let alpha = 1;
+      if (t < fade) alpha = t/fade;
+      else if (p.duration - t < fade) alpha = (p.duration - t)/fade;
+      return { photo:p, alpha: Math.max(0, Math.min(1, alpha)) };
+    }
+  }
+  return null;
+}
+
+// Disegna una foto a piena copertura (stile "cover", senza deformarla) su un canvas qualsiasi
+function drawPhotoCover(ctx, img, w, h, alpha){
+  const scale = Math.max(w/img.width, h/img.height);
+  const dw = img.width*scale, dh = img.height*scale;
+  const dx = (w-dw)/2, dy = (h-dh)/2;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0,0,w,h);
+  ctx.drawImage(img, dx, dy, dw, dh);
+  ctx.restore();
+}
+
+document.getElementById('duration').addEventListener('input', () => {
+  if (photoTracks.length) renderPhotoLane();
+});
+
+let preview = null; // stato del player di anteprima
+let selectedSpeed = 1; // velocità scelta con i pulsanti x0.5/x1/x1.5/x2, usata anche in registrazione
+let previewRAF = null;
+
+function startPreview(){
+  const p = buildAnimParams();
+  preview = { ...p, i:0, pathIndex:0, smoothBearing: initialBearing(p), playing:true, speed:1, lastTs:null };
+  document.getElementById('playerBar').style.display = 'flex';
+  document.getElementById('seekBar').max = p.totalFrames - 1;
+  setPlayPauseUI(true);
+  resetMusicAnchor(0);
+  renderMusicLane();
+  renderPhotoLane();
+  ensureLanePlayhead('seekTrack');
+  renderPreviewFrame(0);
+  previewRAF = requestAnimationFrame(previewLoop);
+}
+
+function stopPreview(){
+  if (previewRAF) cancelAnimationFrame(previewRAF);
+  previewRAF = null;
+  if (preview) preview.playing = false;
+  prevOverlayCtx.clearRect(0,0,prevOverlay.width,prevOverlay.height);
+  stopMusicPreview();
+}
+
+function renderPreviewFrame(i){
+  const p = preview;
+  const pathIndex = p.pathIndex;
+  map.jumpTo(cameraForFrame(p, pathIndex, p.smoothBearing));
+  updateRouteDoneUpTo(p, pathIndex);
+  document.getElementById('seekBar').value = i;
+  const curSec = (i/p.fps).toFixed(1);
+  const totSec = (p.totalFrames/p.fps).toFixed(1);
+  document.getElementById('previewTime').textContent = `${curSec}s / ${totSec}s`;
+  syncMusicPreview(p.playing);
+  updateLanePlayheads(i/p.fps);
+
+  // ridimensiona l'overlay se necessario e disegna l'icona del mezzo
+  const rect = map.getContainer().getBoundingClientRect();
+  if (prevOverlay.width !== rect.width || prevOverlay.height !== rect.height) {
+    prevOverlay.width = rect.width; prevOverlay.height = rect.height;
+  }
+  prevOverlayCtx.clearRect(0,0,prevOverlay.width,prevOverlay.height);
+  const pos = vehicleScreenPos(p.path[pathIndex], p.zoom, p.pitch);
+  const color = document.getElementById('vehicleColor').value;
+  drawAltitudeLine(prevOverlayCtx, pos.groundX, pos.groundY, pos.x, pos.y, color, 1);
+  drawVehicleIcon(prevOverlayCtx, pos.x, pos.y, 1,
+    document.getElementById('vehicleIcon').value, color,
+    document.getElementById('iconStyle').value,
+    parseFloat(document.getElementById('iconSize').value) || 1);
+
+  const activePhoto = getActivePhoto(i/p.fps);
+  if (activePhoto) {
+    drawPhotoCover(prevOverlayCtx, activePhoto.photo.img, prevOverlay.width, prevOverlay.height, activePhoto.alpha);
+  }
+}
+
+function previewLoop(ts){
+  const p = preview;
+  if (!p || !p.playing) return;
+  if (p.lastTs == null) p.lastTs = ts;
+  const dt = (ts - p.lastTs) / 1000;
+  p.lastTs = ts;
+  const framesAdvance = dt * p.fps * p.speed;
+  const targetI = p.i + framesAdvance;
+  const clampedI = Math.min(p.totalFrames - 1, targetI);
+  p.i = clampedI;
+
+  // il percorso avanza solo quando NON siamo dentro una foto (congelato durante la sua visualizzazione)
+  const newPathIndex = computePathIndex(clampedI/p.fps, p.totalFrames, p.fps);
+  while (p.pathIndex < newPathIndex) {
+    p.pathIndex++;
+    p.smoothBearing = stepBearing(p.smoothBearing, p.pathIndex, p);
+  }
+  renderPreviewFrame(Math.floor(clampedI));
+
+  if (clampedI >= p.totalFrames - 1) {
+    p.playing = false;
+    setPlayPauseUI(false);
+    return;
+  }
+  previewRAF = requestAnimationFrame(previewLoop);
+}
+
+// riposiziona il player a un frame preciso, ricalcolando il filtro del bearing da zero
+// (necessario perché il filtro è incrementale e non "invertibile" tornando indietro)
+function seekPreviewTo(idx){
+  const p = preview;
+  if (!p) return;
+  const clamped = Math.max(0, Math.min(p.totalFrames-1, Math.round(idx)));
+  const newPathIndex = computePathIndex(clamped/p.fps, p.totalFrames, p.fps);
+  let sb = initialBearing(p);
+  for (let k=1; k<=newPathIndex; k++) sb = stepBearing(sb, k, p);
+  p.smoothBearing = sb;
+  p.pathIndex = newPathIndex;
+  p.i = clamped;
+  p.lastTs = null;
+  resetMusicAnchor(clamped/p.fps);
+  renderPreviewFrame(clamped);
+}
+
+function setPlayPauseUI(playing){
+  document.getElementById('btnPlayPause').textContent = playing ? '⏸' : '▶️';
+}
+
+// ricostruisce i parametri dell'anteprima quando l'utente modifica un controllo,
+// mantenendo la posizione attuale (in percentuale) e lo stato play/pausa
+function onParamsChanged(){
+  if (!preview) return;
+  const progressFraction = preview.totalFrames > 1 ? preview.i / (preview.totalFrames - 1) : 0;
+  const wasPlaying = preview.playing;
+  const prevSpeed = preview.speed;
+
+  const p = buildAnimParams();
+  const newI = Math.max(0, Math.min(p.totalFrames-1, Math.round(progressFraction * (p.totalFrames-1))));
+  const newPathIndex = computePathIndex(newI/p.fps, p.totalFrames, p.fps);
+
+  let sb = initialBearing(p);
+  for (let k=1; k<=newPathIndex; k++) sb = stepBearing(sb, k, p);
+
+  preview = { ...p, i:newI, pathIndex:newPathIndex, smoothBearing:sb, playing:wasPlaying, speed:prevSpeed, lastTs:null };
+  document.getElementById('seekBar').max = p.totalFrames - 1;
+  resetMusicAnchor(newI/p.fps);
+  renderPreviewFrame(newI);
+}
+
+document.getElementById('btnPlayPause').addEventListener('click', () => {
+  if (!preview) return;
+  preview.playing = !preview.playing;
+  setPlayPauseUI(preview.playing);
+  if (preview.playing) {
+    preview.lastTs = null;
+    resetMusicAnchor(preview.i/preview.fps);
+    previewRAF = requestAnimationFrame(previewLoop);
+  } else {
+    stopMusicPreview();
+  }
+});
+
+document.getElementById('btnSeekBack').addEventListener('click', () => {
+  if (!preview) return;
+  seekPreviewTo(preview.i - 5*preview.fps);
+});
+document.getElementById('btnSeekFwd').addEventListener('click', () => {
+  if (!preview) return;
+  seekPreviewTo(preview.i + 5*preview.fps);
+});
+document.getElementById('seekBar').addEventListener('input', (e) => {
+  if (!preview) return;
+  seekPreviewTo(parseInt(e.target.value));
+});
+[['spd05',0.5],['spd1',1],['spd15',1.5],['spd2',2]].forEach(([id,val]) => {
+  document.getElementById(id).addEventListener('click', () => {
+    selectedSpeed = val;
+    if (preview) preview.speed = val;
+    ['spd05','spd1','spd15','spd2'].forEach(bid => document.getElementById(bid).classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    updateRecordSpeedNote();
+  });
+});
+document.getElementById('spd1').classList.add('active');
+
+function updateRecordSpeedNote(){
+  const baseDuration = parseFloat(document.getElementById('duration').value) || 0;
+  const effective = (baseDuration / selectedSpeed).toFixed(1);
+  const note = document.getElementById('recordSpeedNote');
+  if (selectedSpeed === 1) {
+    note.textContent = '';
+  } else {
+    note.textContent = `Verrà registrato a x${selectedSpeed} → durata effettiva video: ${effective}s`;
+  }
+}
+document.getElementById('duration').addEventListener('input', () => {
+  if (musicTracks.length) renderMusicLane();
+});
+document.getElementById('duration').addEventListener('input', updateRecordSpeedNote);
+
+// aggiornamento live dell'anteprima quando si modifica un parametro
+['pitch','zoom','orbitAmp','orbitPeriod','duration','fps'].forEach(id => {
+  document.getElementById(id).addEventListener('input', onParamsChanged);
+});
+['vehicleIcon','vehicleColor','use3DAltitude','altExaggeration','iconStyle','iconSize'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    if (preview) renderPreviewFrame(preview.i);
+  });
+});
+
+function drawOverlayFrame({ title, cur, progress, zoom, pitch, timeSec }){
+  const mapCanvas = map.getCanvas();
+  recCtx.drawImage(mapCanvas, 0, 0, recCanvas.width, recCanvas.height);
+
+  // fattore di scala rispetto alla risoluzione di riferimento (1280px larghezza)
+  const s = recCanvas.width / 1280;
+
+  // icona del mezzo, in scala con la risoluzione di registrazione
+  const mapRect = map.getContainer().getBoundingClientRect();
+  const scaleX = recCanvas.width / mapRect.width, scaleY = recCanvas.height / mapRect.height;
+  const pos = vehicleScreenPos(cur, zoom, pitch);
+  const vColor = document.getElementById('vehicleColor').value;
+  drawAltitudeLine(recCtx, pos.groundX*scaleX, pos.groundY*scaleY, pos.x*scaleX, pos.y*scaleY, vColor, s);
+  drawVehicleIcon(recCtx, pos.x*scaleX, pos.y*scaleY, s,
+    document.getElementById('vehicleIcon').value, vColor,
+    document.getElementById('iconStyle').value,
+    parseFloat(document.getElementById('iconSize').value) || 1);
+
+  // titolo
+  recCtx.font = `bold ${34*s}px system-ui`;
+  recCtx.fillStyle = '#fff';
+  recCtx.shadowColor = 'rgba(0,0,0,0.6)'; recCtx.shadowBlur = 8*s;
+  recCtx.fillText(title, 40*s, 60*s);
+  recCtx.shadowBlur = 0;
+
+  // ---- profilo altimetrico (sagoma) in alto a destra ----
+  const pw = 420*s, ph = 90*s, px = recCanvas.width - pw - 40*s, py = 20*s;
+  const profile = track.profile;
+  const eleMin = Math.min(...profile), eleMax = Math.max(...profile);
+  const eleRange = Math.max(1, eleMax - eleMin);
+
+  recCtx.save();
+  recCtx.beginPath();
+  recCtx.moveTo(px, py+ph);
+  profile.forEach((e,i) => {
+    const x = px + (i/(profile.length-1))*pw;
+    const y = py + ph - ((e-eleMin)/eleRange)*ph*0.85;
+    recCtx.lineTo(x,y);
+  });
+  recCtx.lineTo(px+pw, py+ph);
+  recCtx.closePath();
+  const grad = recCtx.createLinearGradient(0,py,0,py+ph);
+  grad.addColorStop(0,'rgba(255,204,0,0.55)');
+  grad.addColorStop(1,'rgba(255,204,0,0.08)');
+  recCtx.fillStyle = grad;
+  recCtx.fill();
+  recCtx.strokeStyle = 'rgba(255,255,255,0.8)';
+  recCtx.lineWidth = 1.5*s;
+  recCtx.beginPath();
+  profile.forEach((e,i) => {
+    const x = px + (i/(profile.length-1))*pw;
+    const y = py + ph - ((e-eleMin)/eleRange)*ph*0.85;
+    if (i===0) recCtx.moveTo(x,y); else recCtx.lineTo(x,y);
+  });
+  recCtx.stroke();
+
+  // indicatore posizione attuale sul profilo
+  const markerX = px + progress*pw;
+  const markerIdx = Math.min(profile.length-1, Math.round(progress*(profile.length-1)));
+  const markerY = py + ph - ((profile[markerIdx]-eleMin)/eleRange)*ph*0.85;
+  recCtx.fillStyle = '#fff';
+  recCtx.beginPath(); recCtx.arc(markerX, markerY, 5*s, 0, Math.PI*2); recCtx.fill();
+  recCtx.strokeStyle = 'rgba(0,0,0,0.5)'; recCtx.lineWidth=1*s; recCtx.stroke();
+  recCtx.restore();
+
+  // barra stats in basso
+  const distSoFar = (cur.dist/1000).toFixed(1);
+  const totalKm = (track.totalDist/1000).toFixed(1);
+  const gainSoFar = Math.round(track.gain * progress);
+  recCtx.fillStyle = 'rgba(0,0,0,0.45)';
+  recCtx.fillRect(30*s, recCanvas.height-90*s, 520*s, 60*s);
+  recCtx.fillStyle = '#ffcc00';
+  recCtx.font = `bold ${20*s}px system-ui`;
+  recCtx.fillText(`${distSoFar} / ${totalKm} km`, 50*s, recCanvas.height-58*s);
+  recCtx.fillText(`+${gainSoFar} m`, 250*s, recCanvas.height-58*s);
+  recCtx.fillText(`⛰ ${Math.round(cur.ele)} m`, 400*s, recCanvas.height-58*s);
+
+  // barra di avanzamento
+  recCtx.fillStyle = 'rgba(255,255,255,0.25)';
+  recCtx.fillRect(30*s, recCanvas.height-25*s, 520*s, 6*s);
+  recCtx.fillStyle = '#ffcc00';
+  recCtx.fillRect(30*s, recCanvas.height-25*s, 520*s*progress, 6*s);
+
+  // foto della timeline (se attiva in questo istante): copre tutto il resto
+  const activePhoto = getActivePhoto(timeSec);
+  if (activePhoto) {
+    drawPhotoCover(recCtx, activePhoto.photo.img, recCanvas.width, recCanvas.height, activePhoto.alpha);
+  }
+}
+
+document.getElementById('btnPreview').addEventListener('click', () => startPreview());
+document.getElementById('btnRecord').addEventListener('click', () => {
+  setStatus('Registrazione in corso... non chiudere la finestra.');
+  recordVideo();
+});
+</script>
+</body>
+</html>

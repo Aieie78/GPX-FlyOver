@@ -1,0 +1,22 @@
+.timeline {
+  flex: 0 0 220px;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text);
+}
+
+.timeline__ruler {
+  flex: 0 0 24px;
+  padding: 4px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.timeline__lane {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+}
