@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { startLiveParamsSync } from '../../app/liveParamsSync';
+import { useUndoRedoShortcuts } from '../../app/useUndoRedoShortcuts';
 import { Sidebar } from '../sidebar/Sidebar';
 import { MapCanvas } from '../map/MapCanvas';
 import { PreviewControls } from '../preview/PreviewControls';
@@ -9,6 +10,7 @@ import './appShell.css';
 
 export function AppShell() {
   useEffect(() => startLiveParamsSync(), []);
+  useUndoRedoShortcuts();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (

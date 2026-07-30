@@ -21,13 +21,24 @@
   overflow: hidden;
 }
 
+/* Contenitore di scorrimento orizzontale condiviso dallo zoom della timeline (useTimelineRowScroll):
+ * la larghezza reale del contenuto zoomabile vive nel figlio .transport-row__track/.lane
+ * (impostata inline a zoom*100%) — questo wrapper resta sempre 100% della colonna di griglia e si
+ * limita a mostrarne la porzione visibile, sincronizzando scrollLeft con le altre righe. */
+.transport-row__track-scroll {
+  position: relative;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
 /* Aspetto condiviso della "traccia" (barra video e corsie musica/foto): stessa altezza,
  * sfondo e angoli arrotondati per le tre righe, anche se il contenuto interno differisce
  * (slider nativo invisibile per la barra video, blocchi trascinabili per le corsie). */
 .transport-row__track,
 .lane {
   position: relative;
-  min-width: 0;
+  min-width: 100%;
   height: 40px;
   background: var(--code-bg);
   border-radius: 6px;

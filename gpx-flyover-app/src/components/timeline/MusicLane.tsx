@@ -3,7 +3,8 @@ import type { ChangeEvent, MouseEvent as ReactMouseEvent } from 'react';
 import { Music, Plus, X } from 'lucide-react';
 import { getSessionEngine } from '../../app/flyoverSession';
 import { decodeMusicFileAtPlayhead, fmtMinSec } from '../../audio/musicEngine';
-import { snapValue } from '../../timeline/timelineMath';
+import { assignLaneRows, snapValue } from '../../timeline/timelineMath';
+import { useTimelineRowScroll } from '../../timeline/useTimelineRowScroll';
 import { useProjectStore } from '../../store/useProjectStore';
 import { usePlaybackStore } from '../../store/usePlaybackStore';
 import type { MusicTrack } from '../../types/domain';
@@ -23,6 +24,7 @@ export function MusicLane() {
   const musicVolume = useProjectStore((s) => s.musicVolume);
   const currentTimeSec = usePlaybackStore((s) => s.currentTimeSec);
   const setStatusMessage = usePlaybackStore((s) => s.setStatusMessage);
+  const { scrollRef, onScroll, onWheel, zoom } = useTimelineRowScroll();
 
   const startDrag = (e: ReactMouseEvent, track: MusicTrack, mode: DragMode) => {
     e.preventDefault();
@@ -117,6 +119,13 @@ export function MusicLane() {
 
   const playheadPct = totalDur > 0 ? Math.max(0, Math.min(100, (currentTimeSec / totalDur) * 100)) : 0;
 
+  // Brani sovrapposti/adiacenti nel tempo finiscono su righe separate all'interno della stessa
+  // corsia, invece di impilarsi uno sopra l'altro — la corsia cresce in altezza di conseguenza.
+  const rowOf = assignLaneRows(
+    musicTracks.map((t) => ({ id: t.id, start: t.videoStart, length: t.trimEnd - t.trimStart })),
+  );
+  const rowCount = Math.max(1, ...Array.from(rowOf.values(), (r) => r + 1));
+
   return (
     <div className="transport-row">
       <div className="transport-row__prefix lane-row__label">
@@ -126,29 +135,37 @@ export function MusicLane() {
         </button>
         <input ref={fileInputRef} type="file" accept="audio/*" style={{ display: 'none' }} onChange={handleFileChange} />
       </div>
-      <div className="transport-row__track lane" ref={laneRef} onClick={handleLaneClick}>
-        {musicTracks.map((t) => {
-          const length = t.trimEnd - t.trimStart;
-          const leftPct = (t.videoStart / totalDur) * 100;
-          const widthPct = Math.max(1, Math.min(100 - leftPct, (length / totalDur) * 100));
-          return (
-            <div
-              key={t.id}
-              className="lane-block lane-block--music"
-              style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
-              title={`${t.name}: ${fmtMinSec(t.videoStart)} → ${fmtMinSec(t.videoStart + length)}`}
-              onMouseDown={(e) => handleBlockMouseDown(e, t)}
-            >
-              <div className="lane-block__label">{t.name}</div>
-              <div className="lane-block__remove" onClick={() => removeMusicTrack(t.id)}>
-                <X size={10} />
+      <div className="transport-row__track-scroll" ref={scrollRef} onScroll={onScroll} onWheel={onWheel}>
+        <div
+          className="transport-row__track lane"
+          ref={laneRef}
+          onClick={handleLaneClick}
+          style={{ height: `${rowCount * 40}px`, width: `${zoom * 100}%` }}
+        >
+          {musicTracks.map((t) => {
+            const length = t.trimEnd - t.trimStart;
+            const leftPct = (t.videoStart / totalDur) * 100;
+            const widthPct = Math.max(1, Math.min(100 - leftPct, (length / totalDur) * 100));
+            const row = rowOf.get(t.id) ?? 0;
+            return (
+              <div
+                key={t.id}
+                className="lane-block lane-block--music"
+                style={{ left: `${leftPct}%`, width: `${widthPct}%`, top: `${row * 40 + 3}px` }}
+                title={`${t.name}: ${fmtMinSec(t.videoStart)} → ${fmtMinSec(t.videoStart + length)}`}
+                onMouseDown={(e) => handleBlockMouseDown(e, t)}
+              >
+                <div className="lane-block__label">{t.name}</div>
+                <div className="lane-block__remove" onClick={() => removeMusicTrack(t.id)}>
+                  <X size={10} />
+                </div>
+                <div className="lane-block__resize lane-block__resize--left" onMouseDown={(e) => startDrag(e, t, 'left')} />
+                <div className="lane-block__resize lane-block__resize--right" onMouseDown={(e) => startDrag(e, t, 'right')} />
               </div>
-              <div className="lane-block__resize lane-block__resize--left" onMouseDown={(e) => startDrag(e, t, 'left')} />
-              <div className="lane-block__resize lane-block__resize--right" onMouseDown={(e) => startDrag(e, t, 'right')} />
-            </div>
-          );
-        })}
-        <div className="lane-playhead" style={{ left: `${playheadPct}%` }} />
+            );
+          })}
+          <div className="lane-playhead" style={{ left: `${playheadPct}%` }} />
+        </div>
       </div>
     </div>
   );

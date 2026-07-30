@@ -33,6 +33,38 @@
   overflow-y: auto;
 }
 
+/* Piede fisso della sidebar (undo/redo): sempre visibile in fondo, fuori dallo scroll delle
+ * sezioni sopra — sfondo più scuro per distinguerlo come barra di comando, non come sezione. */
+.sidebar-footer {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.sidebar-footer__btn {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  border-radius: 6px;
+  border: 2px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  transition: background-color 0.15s, opacity 0.15s;
+}
+.sidebar-footer__btn:hover:not(:disabled) {
+  background: var(--accent-bg);
+}
+.sidebar-footer__btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 .sidebar-section {
   border-bottom: 1px solid var(--border);
 }

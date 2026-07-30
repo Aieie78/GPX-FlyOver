@@ -4,7 +4,8 @@ import { Image, Plus, RotateCw, X } from 'lucide-react';
 import { getSessionEngine } from '../../app/flyoverSession';
 import { fmtMinSec } from '../../audio/musicEngine';
 import { buildPhotoClipAtPlayhead } from '../../photos/photoEngine';
-import { snapValue } from '../../timeline/timelineMath';
+import { assignLaneRows, snapValue } from '../../timeline/timelineMath';
+import { useTimelineRowScroll } from '../../timeline/useTimelineRowScroll';
 import { useProjectStore } from '../../store/useProjectStore';
 import { usePlaybackStore } from '../../store/usePlaybackStore';
 import type { PhotoClip, PhotoRotation } from '../../types/domain';
@@ -25,6 +26,7 @@ export function PhotoLane() {
   const totalDur = useProjectStore((s) => s.video.durationSec);
   const currentTimeSec = usePlaybackStore((s) => s.currentTimeSec);
   const setStatusMessage = usePlaybackStore((s) => s.setStatusMessage);
+  const { scrollRef, onScroll, onWheel, zoom } = useTimelineRowScroll();
 
   const startDrag = (e: ReactMouseEvent, clip: PhotoClip, mode: DragMode) => {
     e.preventDefault();
@@ -110,6 +112,11 @@ export function PhotoLane() {
 
   const playheadPct = totalDur > 0 ? Math.max(0, Math.min(100, (currentTimeSec / totalDur) * 100)) : 0;
 
+  // Foto sovrapposte/adiacenti nel tempo finiscono su righe separate all'interno della stessa
+  // corsia, invece di impilarsi una sopra l'altra — la corsia cresce in altezza di conseguenza.
+  const rowOf = assignLaneRows(photoClips.map((p) => ({ id: p.id, start: p.videoStart, length: p.duration })));
+  const rowCount = Math.max(1, ...Array.from(rowOf.values(), (r) => r + 1));
+
   return (
     <div className="transport-row">
       <div className="transport-row__prefix lane-row__label">
@@ -119,39 +126,47 @@ export function PhotoLane() {
         </button>
         <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
       </div>
-      <div className="transport-row__track lane" ref={laneRef} onClick={handleLaneClick}>
-        {photoClips.map((p) => {
-          const leftPct = (p.videoStart / totalDur) * 100;
-          const widthPct = Math.max(1, Math.min(100 - leftPct, (p.duration / totalDur) * 100));
-          return (
-            <div
-              key={p.id}
-              className="lane-block lane-block--photo"
-              style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
-              title={`${p.name}: ${fmtMinSec(p.videoStart)} → ${fmtMinSec(p.videoStart + p.duration)}`}
-              onMouseDown={(e) => handleBlockMouseDown(e, p)}
-            >
-              <img className="lane-block__thumb" src={p.img.src} alt="" />
-              <div className="lane-block__label">{p.name}</div>
+      <div className="transport-row__track-scroll" ref={scrollRef} onScroll={onScroll} onWheel={onWheel}>
+        <div
+          className="transport-row__track lane"
+          ref={laneRef}
+          onClick={handleLaneClick}
+          style={{ height: `${rowCount * 40}px`, width: `${zoom * 100}%` }}
+        >
+          {photoClips.map((p) => {
+            const leftPct = (p.videoStart / totalDur) * 100;
+            const widthPct = Math.max(1, Math.min(100 - leftPct, (p.duration / totalDur) * 100));
+            const row = rowOf.get(p.id) ?? 0;
+            return (
               <div
-                className="lane-block__rotate"
-                title="Ruota di 90°"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRotate(p);
-                }}
+                key={p.id}
+                className="lane-block lane-block--photo"
+                style={{ left: `${leftPct}%`, width: `${widthPct}%`, top: `${row * 40 + 3}px` }}
+                title={`${p.name}: ${fmtMinSec(p.videoStart)} → ${fmtMinSec(p.videoStart + p.duration)}`}
+                onMouseDown={(e) => handleBlockMouseDown(e, p)}
               >
-                <RotateCw size={11} />
+                <img className="lane-block__thumb" src={p.img.src} alt="" />
+                <div className="lane-block__label">{p.name}</div>
+                <div
+                  className="lane-block__rotate"
+                  title="Ruota di 90°"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRotate(p);
+                  }}
+                >
+                  <RotateCw size={11} />
+                </div>
+                <div className="lane-block__remove" onClick={() => removePhotoClip(p.id)}>
+                  <X size={10} />
+                </div>
+                <div className="lane-block__resize lane-block__resize--left" onMouseDown={(e) => startDrag(e, p, 'left')} />
+                <div className="lane-block__resize lane-block__resize--right" onMouseDown={(e) => startDrag(e, p, 'right')} />
               </div>
-              <div className="lane-block__remove" onClick={() => removePhotoClip(p.id)}>
-                <X size={10} />
-              </div>
-              <div className="lane-block__resize lane-block__resize--left" onMouseDown={(e) => startDrag(e, p, 'left')} />
-              <div className="lane-block__resize lane-block__resize--right" onMouseDown={(e) => startDrag(e, p, 'right')} />
-            </div>
-          );
-        })}
-        <div className="lane-playhead" style={{ left: `${playheadPct}%` }} />
+            );
+          })}
+          <div className="lane-playhead" style={{ left: `${playheadPct}%` }} />
+        </div>
       </div>
     </div>
   );

@@ -12,6 +12,7 @@ import { MapStylePanel } from './MapStylePanel';
 import { VehiclePanel } from './VehiclePanel';
 import { MusicPhotosPanel } from './MusicPhotosPanel';
 import { ActionsPanel } from './ActionsPanel';
+import { SidebarFooter } from './SidebarFooter';
 import './sidebar.css';
 import './fields.css';
 
@@ -93,6 +94,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
           <MusicPhotosPanel />
         </SidebarSection>
       </div>
+      <SidebarFooter />
     </aside>
   );
 }

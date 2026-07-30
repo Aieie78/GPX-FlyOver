@@ -2,6 +2,7 @@ import { Pause, Play, SkipBack, SkipForward } from 'lucide-react';
 import { getSessionEngine } from '../../app/flyoverSession';
 import { useProjectStore } from '../../store/useProjectStore';
 import { usePlaybackStore } from '../../store/usePlaybackStore';
+import { useTimelineRowScroll } from '../../timeline/useTimelineRowScroll';
 import type { PlaybackSpeed } from '../../types/domain';
 import '../layout/transportGrid.css';
 import './previewControls.css';
@@ -22,6 +23,7 @@ export function PreviewControls() {
   const currentTimeSec = usePlaybackStore((s) => s.currentTimeSec);
   const totalTimeSec = usePlaybackStore((s) => s.totalTimeSec);
   const totalDur = useProjectStore((s) => s.video.durationSec);
+  const { scrollRef, onScroll, onWheel, zoom } = useTimelineRowScroll();
 
   const started = totalFrames > 0;
   // Stessa base di calcolo (currentTimeSec / durata video configurata) usata da MusicLane e
@@ -64,17 +66,19 @@ export function PreviewControls() {
         </button>
       </div>
 
-      <div className="transport-row__track lane">
-        <input
-          type="range"
-          className="transport-seek-input"
-          min={0}
-          max={Math.max(0, totalFrames - 1)}
-          value={currentFrame}
-          disabled={!started}
-          onChange={(e) => handleSeekBarChange(Number(e.target.value))}
-        />
-        <div className="lane-playhead" style={{ left: `${playheadPct}%` }} />
+      <div className="transport-row__track-scroll" ref={scrollRef} onScroll={onScroll} onWheel={onWheel}>
+        <div className="transport-row__track lane" style={{ width: `${zoom * 100}%` }}>
+          <input
+            type="range"
+            className="transport-seek-input"
+            min={0}
+            max={Math.max(0, totalFrames - 1)}
+            value={currentFrame}
+            disabled={!started}
+            onChange={(e) => handleSeekBarChange(Number(e.target.value))}
+          />
+          <div className="lane-playhead" style={{ left: `${playheadPct}%` }} />
+        </div>
       </div>
 
       <div className="transport-row__suffix">

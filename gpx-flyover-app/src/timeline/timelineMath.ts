@@ -46,6 +46,34 @@ export function videoTimeToPathTime(videoTime: number, photoClips: PhotoClip[], 
   return rawFlightTime * speedUpFactor;
 }
 
+export interface RowAssignItem {
+  id: number;
+  start: number;
+  length: number;
+}
+
+// Assegna a ciascun blocco una "sotto-riga" (0, 1, 2...) all'interno della stessa corsia, in modo
+// che blocchi sovrapposti/adiacenti nel tempo finiscano su righe visive separate invece di
+// impilarsi uno sopra l'altro. Algoritmo greedy classico da "interval scheduling": si scorrono i
+// blocchi in ordine di inizio e si riusa la prima riga già libera (il cui ultimo blocco finisce
+// prima dell'inizio di quello corrente), altrimenti se ne apre una nuova.
+export function assignLaneRows(items: RowAssignItem[]): Map<number, number> {
+  const sorted = [...items].sort((a, b) => a.start - b.start);
+  const rowEnds: number[] = [];
+  const rows = new Map<number, number>();
+  for (const item of sorted) {
+    let row = rowEnds.findIndex((end) => end <= item.start + 1e-6);
+    if (row === -1) {
+      row = rowEnds.length;
+      rowEnds.push(item.start + item.length);
+    } else {
+      rowEnds[row] = item.start + item.length;
+    }
+    rows.set(item.id, row);
+  }
+  return rows;
+}
+
 // Port 1:1 da gpx-flyover.html:629, con il riscalamento di videoTimeToPathTime propagato.
 export function computePathIndex(
   videoTimeSec: number,
