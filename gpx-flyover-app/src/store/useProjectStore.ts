@@ -50,7 +50,15 @@ const initialState: ProjectState = {
   track: null,
   segmentMode: 'longest',
   title: '',
-  video: { resolution: '1920x1080', bitrateMbps: 8, durationSec: 30, fps: 30, aspectRatio: '16:9' },
+  video: {
+    resolution: '1920x1080',
+    bitrateMbps: 8,
+    durationSec: 30,
+    fps: 30,
+    aspectRatio: '16:9',
+    trimStartSec: 0,
+    trimEndSec: null,
+  },
   camera: { pitch: 66, zoom: 12.5, orbitAmp: 25, orbitPeriod: 14 },
   map: {
     maptilerToken: 'FyCTckIX29KYsBltxupY',

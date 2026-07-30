@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import { Pause, Play, SkipBack, SkipForward } from 'lucide-react';
 import { getSessionEngine } from '../../app/flyoverSession';
@@ -26,13 +26,50 @@ export function PreviewControls() {
   const currentTimeSec = usePlaybackStore((s) => s.currentTimeSec);
   const totalTimeSec = usePlaybackStore((s) => s.totalTimeSec);
   const totalDur = useProjectStore((s) => s.video.durationSec);
+  const trimStartSec = useProjectStore((s) => s.video.trimStartSec);
+  const trimEndSec = useProjectStore((s) => s.video.trimEndSec);
+  const updateVideo = useProjectStore((s) => s.updateVideo);
   const { scrollRef, onScroll, onWheel, zoom } = useTimelineRowScroll();
   const [hover, setHover] = useState<{ pct: number; timeSec: number } | null>(null);
+  const laneRef = useRef<HTMLDivElement>(null);
 
   const started = totalFrames > 0;
   // Stessa base di calcolo (currentTimeSec / durata video configurata) usata da MusicLane e
   // PhotoLane per la loro playhead, così le tre righe restano perfettamente allineate.
   const playheadPct = totalDur > 0 ? Math.max(0, Math.min(100, (currentTimeSec / totalDur) * 100)) : 0;
+
+  // Intervallo effettivamente registrato in esportazione (trimEndSec null = fino alla fine,
+  // segue durationSec se cambia). L'anteprima interattiva non è toccata da questo ritaglio.
+  const effectiveTrimEnd = trimEndSec ?? totalDur;
+  const trimStartPct = totalDur > 0 ? Math.max(0, Math.min(100, (trimStartSec / totalDur) * 100)) : 0;
+  const trimEndPct = totalDur > 0 ? Math.max(0, Math.min(100, (effectiveTrimEnd / totalDur) * 100)) : 100;
+
+  const resetTrim = () => updateVideo({ trimStartSec: 0, trimEndSec: null });
+
+  const startTrimDrag = (e: ReactMouseEvent, edge: 'start' | 'end') => {
+    e.preventDefault();
+    e.stopPropagation();
+    const laneEl = laneRef.current;
+    if (!laneEl || totalDur <= 0) return;
+    const rect = laneEl.getBoundingClientRect();
+
+    const onMove = (ev: MouseEvent) => {
+      const sec = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width)) * totalDur;
+      if (edge === 'start') {
+        const newStart = Math.max(0, Math.min(sec, effectiveTrimEnd - 0.5));
+        updateVideo({ trimStartSec: newStart < 0.15 ? 0 : newStart });
+      } else {
+        const newEnd = Math.max(trimStartSec + 0.5, Math.min(sec, totalDur));
+        updateVideo({ trimEndSec: newEnd > totalDur - 0.15 ? null : newEnd });
+      }
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
 
   const togglePlayPause = () => {
     getSessionEngine()?.setPlaying(!isPlaying);
@@ -84,6 +121,7 @@ export function PreviewControls() {
       <div className="transport-row__track-scroll" ref={scrollRef} onScroll={onScroll} onWheel={onWheel}>
         <div
           className="transport-row__track lane"
+          ref={laneRef}
           style={{ width: `${zoom * 100}%` }}
           onMouseMove={handleTrackMouseMove}
           onMouseLeave={handleTrackMouseLeave}
@@ -97,7 +135,25 @@ export function PreviewControls() {
             disabled={!started}
             onChange={(e) => handleSeekBarChange(Number(e.target.value))}
           />
+          {trimStartPct > 0 && <div className="preview-controls__trim-dim" style={{ left: 0, width: `${trimStartPct}%` }} />}
+          {trimEndPct < 100 && (
+            <div className="preview-controls__trim-dim" style={{ left: `${trimEndPct}%`, width: `${100 - trimEndPct}%` }} />
+          )}
           <div className="lane-playhead" style={{ left: `${playheadPct}%` }} />
+          <div
+            className="preview-controls__trim-handle preview-controls__trim-handle--start"
+            style={{ left: `${trimStartPct}%` }}
+            onMouseDown={(e) => startTrimDrag(e, 'start')}
+            onDoubleClick={resetTrim}
+            title="Trascina per impostare l'inizio della registrazione (doppio click per azzerare)"
+          />
+          <div
+            className="preview-controls__trim-handle preview-controls__trim-handle--end"
+            style={{ left: `${trimEndPct}%` }}
+            onMouseDown={(e) => startTrimDrag(e, 'end')}
+            onDoubleClick={resetTrim}
+            title="Trascina per impostare la fine della registrazione (doppio click per azzerare)"
+          />
           {hover && (
             <div className="preview-controls__hover-tooltip" style={{ left: `${hover.pct}%` }}>
               {fmtMinSec(hover.timeSec)}

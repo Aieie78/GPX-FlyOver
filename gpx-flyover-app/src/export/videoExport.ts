@@ -1,7 +1,7 @@
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { buildAnimParams, cameraForFrame, initialBearing, stepBearing } from '../camera/camera';
 import { ensureAudioCtx } from '../audio/musicEngine';
-import { computeMusicFadeWindows, effectiveTrackVolume, scheduleTrackGainEnvelope } from '../audio/musicMix';
+import { renderMusicMixOffline, sliceAudioBuffer } from '../audio/musicMix';
 import { updateRouteDoneUpTo } from '../map/mapSetup';
 import { computePathIndex } from '../timeline/timelineMath';
 import { drawAltitudeLine, drawVehicleIcon, vehicleScreenPos } from '../vehicle/vehicleIcon';
@@ -343,6 +343,15 @@ export async function recordFlight(args: RecordFlightArgs): Promise<Blob> {
   const scaledPhotoClips = scalePhotoClipsForSpeed(photoClips, selectedSpeed);
   const scaledTextOverlays = scaleTextOverlaysForSpeed(textOverlays, selectedSpeed);
 
+  // Intervallo selezionato con le maniglie sulla barra video (PreviewControls.tsx), in secondi
+  // NOMINALI (0..durationSec) — riscalato in proporzione alla durata effettiva come tutto il
+  // resto. L'anteprima interattiva non è toccata da questo ritaglio: riguarda solo l'esportazione.
+  const rangeEndNominal = video.trimEndSec ?? baseDuration;
+  const effRangeStart = Math.max(0, video.trimStartSec / selectedSpeed);
+  const effRangeEnd = Math.min(effectiveDuration, rangeEndNominal / selectedSpeed);
+  const frameStart = Math.max(0, Math.min(p.totalFrames - 1, Math.round(effRangeStart * p.fps)));
+  const frameEnd = Math.max(frameStart + 1, Math.min(p.totalFrames, Math.round(effRangeEnd * p.fps)));
+
   // La scena viene sempre composta in 16:9 (resW x resH) su un canvas separato (composeCanvas),
   // poi ritagliata al centro nel formato scelto (video.aspectRatio) sul recCanvas vero e proprio,
   // quello effettivamente catturato da captureStream/MediaRecorder — per 16:9 il ritaglio è un
@@ -361,61 +370,39 @@ export async function recordFlight(args: RecordFlightArgs): Promise<Blob> {
   const videoStream = recCanvas.captureStream(p.fps);
   const profileBg = buildProfileBackground(track, resW / 1280);
 
-  // Pre-caricamento: posiziona la camera sul primissimo fotogramma e attende che la mappa sia
-  // effettivamente pronta (tile visibili caricate) PRIMA di avviare MediaRecorder — altrimenti
-  // i primi secondi del video mostrerebbero tile a bassa risoluzione/incomplete, dato che la
-  // cattura partirebbe subito dopo il click invece che a mappa già pronta in quella posizione.
-  map.jumpTo(cameraForFrame(p, 0, smoothBearing));
-  updateRouteDoneUpTo(map, p.path, 0);
+  // Pre-caricamento: posiziona la camera sul PRIMO fotogramma del ritaglio (non necessariamente
+  // l'inizio assoluto del percorso) e attende che la mappa sia effettivamente pronta (tile
+  // visibili caricate) PRIMA di avviare MediaRecorder — altrimenti i primi secondi del video
+  // mostrerebbero tile a bassa risoluzione/incomplete, dato che la cattura partirebbe subito dopo
+  // il click invece che a mappa già pronta in quella posizione.
+  const pathIndexAtStart = computePathIndex(frameStart / p.fps, p.totalFrames, p.fps, scaledPhotoClips);
+  map.jumpTo(cameraForFrame(p, pathIndexAtStart, smoothBearing));
+  updateRouteDoneUpTo(map, p.path, pathIndexAtStart);
   await waitForMapIdle(map);
 
   // --- musica di sottofondo (posizionamento libero per brano, opzionale) ---
-  const anySolo = scaledMusicTracks.some((t) => t.solo);
-  const hasMusic = scaledMusicTracks.some(
-    (t) => t.trimEnd - t.trimStart > 0.05 && effectiveTrackVolume(t, anySolo) > 0,
-  );
+  // Il mix (sovrapposizioni + dissolvenze incrociate + volume/mute/solo) viene calcolato in
+  // anticipo con lo stesso renderer offline del percorso deterministico (musicMix.ts), poi
+  // ritagliato all'intervallo selezionato e riprodotto dal vivo come UN SOLO buffer — più
+  // semplice e robusto che programmare live ogni singolo brano con inizio/fine spostati
+  // sull'intervallo (specie per brani già iniziati PRIMA del ritaglio), e il risultato finale è
+  // identico a quello usato dal rendering deterministico.
+  const musicBuffer = await renderMusicMixOffline(scaledMusicTracks, musicVolume, effectiveDuration);
+  const slicedMusicBuffer = musicBuffer ? sliceAudioBuffer(musicBuffer, effRangeStart, effRangeEnd) : null;
+  const hasMusic = slicedMusicBuffer != null;
+
   const tracks: MediaStreamTrack[] = [...videoStream.getVideoTracks()];
   const scheduledSources: AudioBufferSourceNode[] = [];
 
-  if (hasMusic) {
+  if (slicedMusicBuffer) {
     const ctx = ensureAudioCtx(musicVolume);
     const dest = ctx.createMediaStreamDestination();
-    const recGainNode = ctx.createGain();
-    recGainNode.gain.value = musicVolume;
-    recGainNode.connect(dest);
-
-    // la musica resta sempre al ritmo/tono normale (playbackRate=1): solo il video
-    // accelera/rallenta con x1.5/x2/x0.5, la musica no. Le posizioni restano quelle
-    // impostate sulla timeline nominale, semplicemente tagliate se cadono oltre la
-    // fine del video (più corto se accelerato, più lungo se rallentato).
     const startAt = ctx.currentTime + 0.05; // piccolo margine di sicurezza
-    const fadeWindows = computeMusicFadeWindows(scaledMusicTracks);
-    scaledMusicTracks.forEach((track_) => {
-      const length = track_.trimEnd - track_.trimStart;
-      if (length <= 0.05) return;
-      if (track_.videoStart >= effectiveDuration) return; // parte dopo la fine del video: salta
-      const peak = effectiveTrackVolume(track_, anySolo);
-      if (peak <= 0) return; // mutata, o silenziata da un "solo" su un'altra traccia
-      const playLen = Math.min(length, effectiveDuration - track_.videoStart);
-      const trackGain = ctx.createGain();
-      trackGain.connect(recGainNode);
-      const source = ctx.createBufferSource();
-      source.buffer = track_.buffer;
-      source.connect(trackGain);
-      source.start(startAt + track_.videoStart, track_.trimStart, playLen);
-      scheduledSources.push(source);
-
-      // dissolvenza incrociata automatica con brani sovrapposti adiacenti (musicMix.ts)
-      const window = fadeWindows.get(track_.id)!;
-      const actualEnd = Math.min(window.end, track_.videoStart + playLen);
-      scheduleTrackGainEnvelope(trackGain.gain, peak, window, actualEnd, startAt);
-    });
-
-    // dissolvenza finale (ultimi 2 secondi) per non tagliare la musica di netto
-    const fadeStart = startAt + Math.max(0, effectiveDuration - 2);
-    recGainNode.gain.setValueAtTime(musicVolume, fadeStart);
-    recGainNode.gain.linearRampToValueAtTime(0, fadeStart + 2);
-
+    const source = ctx.createBufferSource();
+    source.buffer = slicedMusicBuffer;
+    source.connect(dest);
+    source.start(startAt);
+    scheduledSources.push(source);
     tracks.push(...dest.stream.getAudioTracks());
   }
 
@@ -443,9 +430,14 @@ export async function recordFlight(args: RecordFlightArgs): Promise<Blob> {
   // selectedSpeed. Se il disegno è più lento del budget 1/fps la sessione può comunque allungarsi
   // un po' — è il limite intrinseco della cattura in tempo reale, superabile solo con un
   // rendering deterministico frame-by-frame (prompt-refactoring.md, priorità alta #1).
-  const recordingStart = performance.now();
+  // recordingStart è arretrato di quanto "salta" il ritaglio (frameStart/fps), così il ritmo si
+  // allinea subito al primo fotogramma del ritaglio invece di aspettare inutilmente che scada il
+  // tempo reale corrispondente alla porzione tagliata prima dell'inizio scelto.
+  const recordingStart = performance.now() - (frameStart / p.fps) * 1000;
   let lastPathIndex = 0;
-  for (let i = 0; i < p.totalFrames; i++) {
+  for (let i = frameStart; i < frameEnd; i++) {
+    // videoTimeSec resta assoluto (rispetto all'intera durata effettiva, non al ritaglio) —
+    // foto/testo/percorso/musica sono già ritagliati/allineati su questa stessa base assoluta.
     const videoTimeSec = i / p.fps;
     const pathIndex = computePathIndex(videoTimeSec, p.totalFrames, p.fps, scaledPhotoClips);
     while (lastPathIndex < pathIndex) {

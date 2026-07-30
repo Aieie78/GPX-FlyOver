@@ -74,6 +74,42 @@
   border: none;
 }
 
+/* Zone escluse dalla registrazione (fuori dall'intervallo selezionato con le maniglie) */
+.preview-controls__trim-dim {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.preview-controls__trim-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  transform: translateX(-50%);
+  cursor: ew-resize;
+  z-index: 8;
+}
+.preview-controls__trim-handle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 4px;
+  transform: translateX(-50%);
+  background: var(--accent);
+  border-radius: 2px;
+}
+.preview-controls__trim-handle:hover::before,
+.preview-controls__trim-handle:active::before {
+  filter: brightness(1.2);
+  width: 6px;
+}
+
 .preview-controls__hover-tooltip {
   position: absolute;
   bottom: calc(100% + 6px);

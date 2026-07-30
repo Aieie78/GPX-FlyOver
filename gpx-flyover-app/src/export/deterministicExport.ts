@@ -1,9 +1,8 @@
 import { AudioBufferSource, BufferTarget, CanvasSource, Output, WebMOutputFormat } from 'mediabunny';
 import { buildAnimParams, cameraForFrame, initialBearing, stepBearing } from '../camera/camera';
-import { computeMusicFadeWindows, effectiveTrackVolume, scheduleTrackGainEnvelope } from '../audio/musicMix';
+import { renderMusicMixOffline, sliceAudioBuffer } from '../audio/musicMix';
 import { updateRouteDoneUpTo } from '../map/mapSetup';
 import { computePathIndex } from '../timeline/timelineMath';
-import type { MusicTrack } from '../types/domain';
 import {
   buildProfileBackground,
   computeAspectCrop,
@@ -33,59 +32,6 @@ export class ExportCancelledError extends Error {
     super('Esportazione annullata');
     this.name = 'ExportCancelledError';
   }
-}
-
-// Rende in modo deterministico l'intero mix musicale (sovrapposizioni + dissolvenza finale) in
-// UN SOLO AudioBuffer, riusando la stessa logica di scheduling di recordFlight (videoExport.ts)
-// ma su un OfflineAudioContext invece che sul contesto audio live — stesso mixaggio/dissolvenza,
-// ma calcolato in anticipo e non vincolato al tempo reale. Ritorna null se non c'è musica utile.
-// I musicTracks passati devono essere già riscalati per la velocità (scaleMusicTracksForSpeed).
-export async function renderMusicMixOffline(
-  musicTracks: MusicTrack[],
-  musicVolume: number,
-  durationSec: number,
-): Promise<AudioBuffer | null> {
-  const anySolo = musicTracks.some((t) => t.solo);
-  const hasMusic = musicTracks.some(
-    (t) => t.trimEnd - t.trimStart > 0.05 && effectiveTrackVolume(t, anySolo) > 0,
-  );
-  if (!hasMusic) return null;
-
-  const sampleRate = 48000;
-  const offlineCtx = new OfflineAudioContext(2, Math.ceil(durationSec * sampleRate), sampleRate);
-  const gainNode = offlineCtx.createGain();
-  gainNode.gain.value = musicVolume;
-  gainNode.connect(offlineCtx.destination);
-
-  // stesse posizioni della timeline nominale (già riscalate dal chiamante), tagliate se cadono
-  // oltre la fine del video — identico a recordFlight, con l'aggiunta del gain per traccia
-  // (volume/mute/solo + dissolvenza incrociata automatica tra brani sovrapposti, musicMix.ts).
-  const fadeWindows = computeMusicFadeWindows(musicTracks);
-  musicTracks.forEach((track) => {
-    const length = track.trimEnd - track.trimStart;
-    if (length <= 0.05) return;
-    if (track.videoStart >= durationSec) return;
-    const peak = effectiveTrackVolume(track, anySolo);
-    if (peak <= 0) return;
-    const playLen = Math.min(length, durationSec - track.videoStart);
-    const trackGain = offlineCtx.createGain();
-    trackGain.connect(gainNode);
-    const source = offlineCtx.createBufferSource();
-    source.buffer = track.buffer;
-    source.connect(trackGain);
-    source.start(track.videoStart, track.trimStart, playLen);
-
-    const window = fadeWindows.get(track.id)!;
-    const actualEnd = Math.min(window.end, track.videoStart + playLen);
-    scheduleTrackGainEnvelope(trackGain.gain, peak, window, actualEnd, 0);
-  });
-
-  // dissolvenza finale (ultimi 2 secondi), identica a recordFlight
-  const fadeStart = Math.max(0, durationSec - 2);
-  gainNode.gain.setValueAtTime(musicVolume, fadeStart);
-  gainNode.gain.linearRampToValueAtTime(0, fadeStart + 2);
-
-  return offlineCtx.startRendering();
 }
 
 export async function recordFlightDeterministic(
@@ -119,6 +65,16 @@ export async function recordFlightDeterministic(
   const scaledPhotoClips = scalePhotoClipsForSpeed(photoClips, selectedSpeed);
   const scaledTextOverlays = scaleTextOverlaysForSpeed(textOverlays, selectedSpeed);
 
+  // Intervallo selezionato con le maniglie sulla barra video (PreviewControls.tsx), in secondi
+  // NOMINALI (0..durationSec) — riscalato in proporzione alla durata effettiva come tutto il
+  // resto. L'anteprima interattiva non è toccata da questo ritaglio: riguarda solo l'esportazione.
+  const rangeEndNominal = video.trimEndSec ?? baseDuration;
+  const effRangeStart = Math.max(0, video.trimStartSec / selectedSpeed);
+  const effRangeEnd = Math.min(effectiveDuration, rangeEndNominal / selectedSpeed);
+  const frameStart = Math.max(0, Math.min(p.totalFrames - 1, Math.round(effRangeStart * p.fps)));
+  const frameEnd = Math.max(frameStart + 1, Math.min(p.totalFrames, Math.round(effRangeEnd * p.fps)));
+  const outputTotalFrames = frameEnd - frameStart;
+
   // Stessa composizione a 16:9 + ritaglio finale al centro di recordFlight (videoExport.ts):
   // recCanvas (quello che Mediabunny/CanvasSource cattura davvero) ha le dimensioni GIÀ ritagliate,
   // composeCanvas è la scena intera su cui disegna drawOverlayFrame.
@@ -133,13 +89,16 @@ export async function recordFlightDeterministic(
   const composeCtx = composeCanvas.getContext('2d')!;
   const profileBg = buildProfileBackground(track, resW / 1280);
 
-  // Stesso pre-caricamento di recordFlight: posiziona la camera sul primo fotogramma e attende
-  // che la mappa sia davvero pronta prima di iniziare a disegnare/codificare.
-  map.jumpTo(cameraForFrame(p, 0, smoothBearing));
-  updateRouteDoneUpTo(map, p.path, 0);
+  // Stesso pre-caricamento di recordFlight: posiziona la camera sul PRIMO fotogramma del
+  // ritaglio (non necessariamente l'inizio assoluto del percorso) e attende che la mappa sia
+  // davvero pronta prima di iniziare a disegnare/codificare.
+  const pathIndexAtStart = computePathIndex(frameStart / p.fps, p.totalFrames, p.fps, scaledPhotoClips);
+  map.jumpTo(cameraForFrame(p, pathIndexAtStart, smoothBearing));
+  updateRouteDoneUpTo(map, p.path, pathIndexAtStart);
   await waitForMapIdle(map);
 
   const musicBuffer = await renderMusicMixOffline(scaledMusicTracks, musicVolume, effectiveDuration);
+  const slicedMusicBuffer = musicBuffer ? sliceAudioBuffer(musicBuffer, effRangeStart, effRangeEnd) : null;
 
   const output = new Output({
     format: new WebMOutputFormat(),
@@ -152,7 +111,7 @@ export async function recordFlightDeterministic(
   });
   output.addVideoTrack(videoSource, { frameRate: p.fps });
 
-  const audioSource = musicBuffer ? new AudioBufferSource({ codec: 'opus', bitrate: 128_000 }) : null;
+  const audioSource = slicedMusicBuffer ? new AudioBufferSource({ codec: 'opus', bitrate: 128_000 }) : null;
   if (audioSource) output.addAudioTrack(audioSource);
 
   // Tutto il corpo dopo la creazione di `output` è avvolto in try/finally: qualunque uscita
@@ -163,16 +122,19 @@ export async function recordFlightDeterministic(
   let finalized = false;
   try {
     await output.start();
-    if (audioSource && musicBuffer) {
-      await audioSource.add(musicBuffer);
+    if (audioSource && slicedMusicBuffer) {
+      await audioSource.add(slicedMusicBuffer);
     }
 
     let lastPathIndex = 0;
-    for (let i = 0; i < p.totalFrames; i++) {
+    for (let i = frameStart; i < frameEnd; i++) {
       if (isCancelled()) {
         throw new ExportCancelledError();
       }
 
+      // videoTimeSec resta assoluto (rispetto all'intera durata effettiva, non al ritaglio) —
+      // foto/testo/percorso vanno cercati nella loro posizione originale sulla timeline nominale.
+      // Solo il timestamp scritto nel file di output (sotto) è relativo all'inizio del ritaglio.
       const videoTimeSec = i / p.fps;
       const pathIndex = computePathIndex(videoTimeSec, p.totalFrames, p.fps, scaledPhotoClips);
       while (lastPathIndex < pathIndex) {
@@ -200,8 +162,8 @@ export async function recordFlightDeterministic(
       });
       recCtx.drawImage(composeCanvas, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, crop.outW, crop.outH);
 
-      await videoSource.add(videoTimeSec, 1 / p.fps);
-      onProgress((i + 1) / p.totalFrames);
+      await videoSource.add((i - frameStart) / p.fps, 1 / p.fps);
+      onProgress((i - frameStart + 1) / outputTotalFrames);
     }
 
     await output.finalize();

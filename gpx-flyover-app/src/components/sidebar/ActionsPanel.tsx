@@ -21,6 +21,8 @@ export function ActionsPanel({ onLoad }: ActionsPanelProps) {
   const setStatusMessage = usePlaybackStore((s) => s.setStatusMessage);
   const playbackSpeed = usePlaybackStore((s) => s.playbackSpeed);
   const durationSec = useProjectStore((s) => s.video.durationSec);
+  const trimStartSec = useProjectStore((s) => s.video.trimStartSec);
+  const trimEndSec = useProjectStore((s) => s.video.trimEndSec);
 
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [exportProgress, setExportProgress] = useState(0);
@@ -106,11 +108,17 @@ export function ActionsPanel({ onLoad }: ActionsPanelProps) {
     }
   };
 
-  // Port di updateRecordSpeedNote, gpx-flyover.html:1386-1395.
-  const recordSpeedNote =
-    playbackSpeed !== 1
-      ? `Verrà registrato a x${playbackSpeed} → durata effettiva video: ${(durationSec / playbackSpeed).toFixed(1)}s`
-      : '';
+  // Port di updateRecordSpeedNote, gpx-flyover.html:1386-1395, esteso per avvisare anche
+  // quando è selezionato solo un intervallo della timeline (maniglie sulla barra video).
+  const effectiveTrimEnd = trimEndSec ?? durationSec;
+  const isTrimmed = trimStartSec > 0.05 || effectiveTrimEnd < durationSec - 0.05;
+  const recordedRangeSec = Math.max(0, effectiveTrimEnd - trimStartSec);
+  const noteParts: string[] = [];
+  if (playbackSpeed !== 1) noteParts.push(`x${playbackSpeed}`);
+  if (isTrimmed) noteParts.push(`intervallo ${trimStartSec.toFixed(1)}s–${effectiveTrimEnd.toFixed(1)}s`);
+  const recordSpeedNote = noteParts.length
+    ? `Verrà registrato ${noteParts.join(', ')} → durata effettiva video: ${(recordedRangeSec / playbackSpeed).toFixed(1)}s`
+    : '';
 
   return (
     <div className="sidebar-actions">

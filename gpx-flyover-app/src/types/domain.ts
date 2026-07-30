@@ -58,6 +58,12 @@ export interface VideoParams {
   durationSec: number;
   fps: number;
   aspectRatio: VideoAspectRatio;
+  // Intervallo della timeline NOMINALE (0..durationSec) effettivamente registrato — maniglie
+  // trascinabili sulla barra video (PreviewControls.tsx). trimEndSec null = fino alla fine
+  // (segue durationSec automaticamente se cambia, invece di restare "congelato" a un vecchio
+  // valore). L'anteprima interattiva resta invariata: il ritaglio si applica solo in esportazione.
+  trimStartSec: number;
+  trimEndSec: number | null;
 }
 
 export interface CameraParams {

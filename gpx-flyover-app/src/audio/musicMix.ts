@@ -1,5 +1,7 @@
 import type { MusicTrack } from '../types/domain';
 
+const OFFLINE_SAMPLE_RATE = 48000;
+
 const MAX_CROSSFADE_SEC = 1.5;
 
 export interface MusicFadeWindow {
@@ -86,4 +88,81 @@ export function scheduleTrackGainEnvelope(
     gainParam.setValueAtTime(peak, timeOffset + fadeOutStart);
     gainParam.linearRampToValueAtTime(0, timeOffset + actualEnd);
   }
+}
+
+// Ritaglia un AudioBuffer già mixato al solo intervallo [startSec, endSec) — usata per esportare
+// solo la porzione di video selezionata con le maniglie di inizio/fine (PreviewControls.tsx):
+// più semplice e robusto che riprogrammare la dissolvenza incrociata di ogni singolo brano con
+// tempi relativi al nuovo inizio (specie per i brani che iniziavano PRIMA del ritaglio), dato che
+// il mix è già stato calcolato correttamente sull'intera durata nominale. Applica anche una breve
+// dissolvenza in uscita (fadeOutSec) sulla coda del ritaglio, per non tagliare la musica di netto
+// quando il ritaglio finisce prima della dissolvenza finale naturale già inclusa nel mix.
+export function sliceAudioBuffer(buffer: AudioBuffer, startSec: number, endSec: number, fadeOutSec = 2): AudioBuffer {
+  const sr = buffer.sampleRate;
+  const startSample = Math.max(0, Math.floor(startSec * sr));
+  const endSample = Math.min(buffer.length, Math.ceil(endSec * sr));
+  const length = Math.max(1, endSample - startSample);
+  const out = new AudioBuffer({ numberOfChannels: buffer.numberOfChannels, length, sampleRate: sr });
+  const fadeSamples = Math.min(length, Math.round(fadeOutSec * sr));
+  const fadeStart = length - fadeSamples;
+  const tmp = new Float32Array(length);
+  for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+    buffer.copyFromChannel(tmp, ch, startSample);
+    for (let i = 0; i < fadeSamples; i++) {
+      tmp[fadeStart + i] *= 1 - i / fadeSamples;
+    }
+    out.copyToChannel(tmp, ch, 0);
+  }
+  return out;
+}
+
+// Rende in modo deterministico l'intero mix musicale (sovrapposizioni + dissolvenza finale) in
+// UN SOLO AudioBuffer, su un OfflineAudioContext — non vincolato al tempo reale. Usata sia dal
+// rendering deterministico (deterministicExport.ts) sia dalla registrazione in tempo reale
+// (recordFlight, videoExport.ts): quest'ultima riproduce dal vivo il buffer già mixato/tagliato
+// (con sliceAudioBuffer) invece di programmare ogni brano live — più semplice e robusto,
+// specialmente per esportare solo una PORZIONE selezionata del video (le dissolvenze di brani
+// che iniziano prima del ritaglio sono già risolte correttamente nel mix offline). Ritorna null
+// se non c'è musica utile. I musicTracks passati devono essere già riscalati per la velocità
+// (scaleMusicTracksForSpeed).
+export async function renderMusicMixOffline(
+  musicTracks: MusicTrack[],
+  musicVolume: number,
+  durationSec: number,
+): Promise<AudioBuffer | null> {
+  const anySolo = musicTracks.some((t) => t.solo);
+  const hasMusic = musicTracks.some((t) => t.trimEnd - t.trimStart > 0.05 && effectiveTrackVolume(t, anySolo) > 0);
+  if (!hasMusic) return null;
+
+  const offlineCtx = new OfflineAudioContext(2, Math.ceil(durationSec * OFFLINE_SAMPLE_RATE), OFFLINE_SAMPLE_RATE);
+  const gainNode = offlineCtx.createGain();
+  gainNode.gain.value = musicVolume;
+  gainNode.connect(offlineCtx.destination);
+
+  const fadeWindows = computeMusicFadeWindows(musicTracks);
+  musicTracks.forEach((track) => {
+    const length = track.trimEnd - track.trimStart;
+    if (length <= 0.05) return;
+    if (track.videoStart >= durationSec) return;
+    const peak = effectiveTrackVolume(track, anySolo);
+    if (peak <= 0) return;
+    const playLen = Math.min(length, durationSec - track.videoStart);
+    const trackGain = offlineCtx.createGain();
+    trackGain.connect(gainNode);
+    const source = offlineCtx.createBufferSource();
+    source.buffer = track.buffer;
+    source.connect(trackGain);
+    source.start(track.videoStart, track.trimStart, playLen);
+
+    const window = fadeWindows.get(track.id)!;
+    const actualEnd = Math.min(window.end, track.videoStart + playLen);
+    scheduleTrackGainEnvelope(trackGain.gain, peak, window, actualEnd, 0);
+  });
+
+  // dissolvenza finale (ultimi 2 secondi), per non tagliare la musica di netto
+  const fadeStart = Math.max(0, durationSec - 2);
+  gainNode.gain.setValueAtTime(musicVolume, fadeStart);
+  gainNode.gain.linearRampToValueAtTime(0, fadeStart + 2);
+
+  return offlineCtx.startRendering();
 }
