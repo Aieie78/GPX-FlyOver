@@ -159,6 +159,7 @@ export async function recordFlightDeterministic(
         timeSec: videoTimeSec,
         photoClips: scaledPhotoClips,
         textOverlays: scaledTextOverlays,
+        showAltitudeProfile: video.showAltitudeProfile,
       });
       recCtx.drawImage(composeCanvas, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, crop.outW, crop.outH);
 

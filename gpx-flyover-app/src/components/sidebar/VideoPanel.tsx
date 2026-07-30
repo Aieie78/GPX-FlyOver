@@ -68,6 +68,14 @@ export function VideoPanel() {
           perde parte dell'inquadratura.
         </p>
       )}
+      <label>
+        <input
+          type="checkbox"
+          checked={video.showAltitudeProfile}
+          onChange={(e) => updateVideo({ showAltitudeProfile: e.target.checked })}
+        />
+        Mostra sagoma profilo altimetrico (in alto a destra)
+      </label>
     </>
   );
 }

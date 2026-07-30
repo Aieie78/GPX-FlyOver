@@ -202,6 +202,7 @@ interface DrawOverlayArgs {
   timeSec: number;
   photoClips: PhotoClip[];
   textOverlays: TextOverlay[];
+  showAltitudeProfile: boolean;
 }
 
 // Disegna un fotogramma completo dell'overlay di esportazione (mappa + icona mezzo + titolo +
@@ -215,7 +216,7 @@ export function drawOverlayFrame(
   profileBg: ProfileBackground,
   args: DrawOverlayArgs,
 ): void {
-  const { title, cur, progress, zoom, pitch, timeSec, photoClips, textOverlays } = args;
+  const { title, cur, progress, zoom, pitch, timeSec, photoClips, textOverlays, showAltitudeProfile } = args;
   const mapCanvas = map.getCanvas();
   recCtx.drawImage(mapCanvas, 0, 0, recCanvas.width, recCanvas.height);
 
@@ -238,26 +239,28 @@ export function drawOverlayFrame(
   recCtx.fillText(title, 40 * s, 60 * s);
   recCtx.shadowBlur = 0;
 
-  // ---- profilo altimetrico (sagoma pre-disegnata) in alto a destra ----
-  const { canvas: profileCanvas, pw, ph, eleMin, eleRange } = profileBg;
-  const px = recCanvas.width - pw - 40 * s;
-  const py = 20 * s;
-  recCtx.drawImage(profileCanvas, px, py);
+  // ---- profilo altimetrico (sagoma pre-disegnata) in alto a destra, disattivabile ----
+  if (showAltitudeProfile) {
+    const { canvas: profileCanvas, pw, ph, eleMin, eleRange } = profileBg;
+    const px = recCanvas.width - pw - 40 * s;
+    const py = 20 * s;
+    recCtx.drawImage(profileCanvas, px, py);
 
-  // indicatore posizione attuale sul profilo (unica parte disegnata ad ogni fotogramma)
-  const profile = track.profile;
-  const markerX = px + progress * pw;
-  const markerIdx = Math.min(profile.length - 1, Math.round(progress * (profile.length - 1)));
-  const markerY = py + ph - ((profile[markerIdx] - eleMin) / eleRange) * ph * 0.85;
-  recCtx.save();
-  recCtx.fillStyle = '#fff';
-  recCtx.beginPath();
-  recCtx.arc(markerX, markerY, 5 * s, 0, Math.PI * 2);
-  recCtx.fill();
-  recCtx.strokeStyle = 'rgba(0,0,0,0.5)';
-  recCtx.lineWidth = 1 * s;
-  recCtx.stroke();
-  recCtx.restore();
+    // indicatore posizione attuale sul profilo (unica parte disegnata ad ogni fotogramma)
+    const profile = track.profile;
+    const markerX = px + progress * pw;
+    const markerIdx = Math.min(profile.length - 1, Math.round(progress * (profile.length - 1)));
+    const markerY = py + ph - ((profile[markerIdx] - eleMin) / eleRange) * ph * 0.85;
+    recCtx.save();
+    recCtx.fillStyle = '#fff';
+    recCtx.beginPath();
+    recCtx.arc(markerX, markerY, 5 * s, 0, Math.PI * 2);
+    recCtx.fill();
+    recCtx.strokeStyle = 'rgba(0,0,0,0.5)';
+    recCtx.lineWidth = 1 * s;
+    recCtx.stroke();
+    recCtx.restore();
+  }
 
   // barra stats in basso
   const distSoFar = (cur.dist / 1000).toFixed(1);
@@ -456,6 +459,7 @@ export async function recordFlight(args: RecordFlightArgs): Promise<Blob> {
       timeSec: videoTimeSec,
       photoClips: scaledPhotoClips,
       textOverlays: scaledTextOverlays,
+      showAltitudeProfile: video.showAltitudeProfile,
     });
     recCtx.drawImage(composeCanvas, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, crop.outW, crop.outH);
   }

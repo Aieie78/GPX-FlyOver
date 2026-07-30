@@ -58,6 +58,7 @@ const initialState: ProjectState = {
     aspectRatio: '16:9',
     trimStartSec: 0,
     trimEndSec: null,
+    showAltitudeProfile: true,
   },
   camera: { pitch: 66, zoom: 12.5, orbitAmp: 25, orbitPeriod: 14 },
   map: {

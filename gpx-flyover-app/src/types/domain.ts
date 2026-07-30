@@ -64,6 +64,7 @@ export interface VideoParams {
   // valore). L'anteprima interattiva resta invariata: il ritaglio si applica solo in esportazione.
   trimStartSec: number;
   trimEndSec: number | null;
+  showAltitudeProfile: boolean; // sagoma del profilo altimetrico in alto a destra (solo export)
 }
 
 export interface CameraParams {
