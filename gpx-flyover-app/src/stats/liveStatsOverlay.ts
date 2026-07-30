@@ -49,20 +49,21 @@ export function drawLiveStatsBox(ctx: CanvasRenderingContext2D, canvasW: number,
   }
 
   ctx.fillStyle = '#fff';
-  ctx.textAlign = 'left';
+  ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
   const lineH = h / 5;
+  const textX = x + w - pad;
   const speedLabel = cur.speedKmh != null ? `Velocità: ${Math.round(cur.speedKmh)} km/h` : 'Velocità: n/d';
   const timeLabel = cur.clockTimeMs != null ? `Ora: ${formatClockTime(cur.clockTimeMs)}` : 'Ora: n/d';
   const lat = formatDMS(cur.lat, 'N', 'S');
   const lon = formatDMS(cur.lon, 'E', 'W');
 
   ctx.font = `600 ${11 * s}px system-ui`;
-  ctx.fillText(speedLabel, x + pad, y + lineH * 0.5);
-  ctx.fillText(`Rotta: ${Math.round(cur.headingDeg)}° (${compassLabel(cur.headingDeg)})`, x + pad, y + lineH * 1.5);
-  ctx.fillText(`Quota: ${Math.round(cur.ele)} m`, x + pad, y + lineH * 2.5);
-  ctx.fillText(timeLabel, x + pad, y + lineH * 3.5);
+  ctx.fillText(speedLabel, textX, y + lineH * 0.5);
+  ctx.fillText(`Rotta: ${Math.round(cur.headingDeg)}° (${compassLabel(cur.headingDeg)})`, textX, y + lineH * 1.5);
+  ctx.fillText(`Quota: ${Math.round(cur.ele)} m`, textX, y + lineH * 2.5);
+  ctx.fillText(timeLabel, textX, y + lineH * 3.5);
   ctx.font = `600 ${9.5 * s}px system-ui`;
-  ctx.fillText(`${lat}  ${lon}`, x + pad, y + lineH * 4.5);
+  ctx.fillText(`${lat}  ${lon}`, textX, y + lineH * 4.5);
   ctx.restore();
 }
