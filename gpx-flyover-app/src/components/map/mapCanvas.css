@@ -1,18 +1,28 @@
+/*
+ * IMPORTANTE: questo div viene passato come `container` a `new MapLibreMap({ container: ... })`.
+ * MapLibre gli aggiunge la classe `.maplibregl-map` e ci inserisce dentro i propri nodi DOM
+ * (canvas-container, canvas, controlli) fuori dal controllo di React. Applicare `display: flex`
+ * (o grid) DIRETTAMENTE su questo elemento crea un loop di resize con il ResizeObserver interno
+ * di MapLibre: gli eventi 'styledata'/'data' si ripetono all'infinito e 'load'/'idle' non
+ * scattano mai, pur avendo l'immagine satellitare visivamente completa. Deve restare un
+ * contenitore a blocco semplice, posizionato e dimensionato dal flex layout ESTERNO
+ * (.app-shell__main), non un flex container lui stesso.
+ */
 .map-canvas {
   position: relative;
   flex: 1 1 auto;
   min-height: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   background: #10131a;
-  color: #6b7280;
-  font-size: 13px;
   overflow: hidden;
 }
 
 .map-canvas__placeholder {
-  position: relative;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #6b7280;
+  font-size: 13px;
   z-index: 1;
 }
 

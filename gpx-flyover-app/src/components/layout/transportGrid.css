@@ -1,0 +1,59 @@
+/*
+ * Griglia condivisa da barra di scorrimento video, corsia musica e corsia foto
+ * (gpx-flyover.html:34-35, stesso grid-template-columns su .transportRow e .laneRow).
+ * Ogni riga è un grid container INDIPENDENTE, quindi l'allineamento tra le tre righe
+ * dipende dall'usare valori assoluti identici per le colonne prefix/suffix — non "auto"
+ * o "fr" relativi al contenuto di ciascuna riga, altrimenti divergerebbero.
+ */
+.transport-row {
+  display: grid;
+  grid-template-columns: 140px 1fr 240px;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.transport-row__prefix {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Aspetto condiviso della "traccia" (barra video e corsie musica/foto): stessa altezza,
+ * sfondo e angoli arrotondati per le tre righe, anche se il contenuto interno differisce
+ * (slider nativo invisibile per la barra video, blocchi trascinabili per le corsie). */
+.transport-row__track,
+.lane {
+  position: relative;
+  min-width: 0;
+  height: 40px;
+  background: var(--code-bg);
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: text;
+}
+
+.transport-row__suffix {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Playhead unica, condivisa (per percentuale) da tutte e tre le righe — sostituisce sia il
+ * pallino nativo dello slider (nascosto altrove) sia qualunque calcolo indipendente riga per
+ * riga, eliminando il disallineamento tra loro. */
+.lane-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #000;
+  pointer-events: none;
+  z-index: 6;
+  /* alone chiaro intorno alla riga nera, per restare visibile anche sopra foto scure */
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9);
+}

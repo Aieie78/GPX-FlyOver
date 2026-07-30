@@ -1,9 +1,36 @@
 .sidebar {
   width: 320px;
   flex: 0 0 auto;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   border-right: 1px solid var(--border);
   background: var(--code-bg);
+  overflow: hidden;
+  transition: width 0.2s ease;
+}
+
+/* Comprime l'intera sidebar per recuperare spazio alla mappa/anteprima video — il contenuto
+ * resta montato (nessuna perdita di stato dei form) ma è clippato durante la transizione. */
+.sidebar--collapsed {
+  width: 0;
+  border-right: none;
+}
+
+/* Pulsanti azione: sempre visibili in cima, non scorrono con le sezioni sottostanti. */
+.sidebar-actions {
+  flex: 0 0 auto;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 4px 8px -4px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 1;
+}
+
+.sidebar__sections {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .sidebar-section {
@@ -11,23 +38,59 @@
 }
 
 .sidebar-section__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   cursor: pointer;
   padding: 12px 16px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--text-h);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text);
   list-style: none;
   user-select: none;
+  /* leggera gradazione più scura per distinguere il titolo dal contenuto sottostante */
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0.04));
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.sidebar-section__title:hover {
+  background: var(--accent-bg);
+  color: var(--text-h);
 }
 
 .sidebar-section__title::-webkit-details-marker {
   display: none;
 }
 
-.sidebar-section__body {
-  padding: 0 16px 16px;
+.sidebar-section__icon {
+  flex: 0 0 auto;
+  color: var(--accent);
 }
 
-.sidebar-actions {
-  padding: 16px;
+.sidebar-section__label {
+  flex: 1 1 auto;
+}
+
+.sidebar-section__chevron {
+  flex: 0 0 auto;
+  color: var(--text);
+  transition: transform 0.15s;
+}
+
+.sidebar-section[open] > .sidebar-section__title {
+  background: var(--accent-bg);
+  color: var(--text-h);
+  border-left: 3px solid var(--accent);
+  padding-left: 13px;
+}
+
+.sidebar-section[open] > .sidebar-section__title .sidebar-section__chevron {
+  transform: rotate(90deg);
+  color: var(--accent);
+}
+
+.sidebar-section__body {
+  padding: 4px 16px 16px;
 }

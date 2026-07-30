@@ -57,7 +57,13 @@ export function MapCanvas() {
       usePlaybackStore.getState().setStatusMessage(`Errore mappa: ${e.error?.message ?? 'errore sconosciuto'}`);
     });
 
-    map.on('load', () => {
+    // In MapLibre v6 lo stile può risultare già completamente caricato (map.loaded() === true)
+    // nello stesso tick sincrono in cui viene registrato questo listener (specialmente con
+    // stili/tile già in cache) — un semplice map.on('load', ...) può quindi non scattare mai
+    // perché l'evento è già stato emesso prima che il listener venisse collegato. Pattern
+    // sicuro contro questa race condition: eseguire subito se già pronta, altrimenti attendere
+    // l'evento una tantum.
+    const onStyleReady = () => {
       const currentTrack = useProjectStore.getState().track;
       if (!currentTrack) return;
       try {
@@ -88,7 +94,13 @@ export function MapCanvas() {
           setSessionEngine(engine);
         }
       }
-    });
+    };
+
+    if (map.loaded()) {
+      onStyleReady();
+    } else {
+      map.once('load', onStyleReady);
+    }
 
     return () => {
       setSessionEngine(null);

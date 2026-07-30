@@ -39,7 +39,11 @@ const initialState: ProjectState = {
   title: '',
   video: { resolution: '1920x1080', bitrateMbps: 8, durationSec: 30, fps: 30 },
   camera: { pitch: 66, zoom: 12.5, orbitAmp: 25, orbitPeriod: 14 },
-  map: { maptilerToken: 'FyCTckIX29KYsBltxupY', styleId: 'hybrid-v4', customStyleUrl: '' },
+  map: {
+    maptilerToken: 'FyCTckIX29KYsBltxupY',
+    styleId: 'hybrid-v4',
+    customStyleUrl: 'https://api.maptiler.com/maps/019fad3d-3469-7200-b415-d66035b09fd7/style.json?key=FyCTckIX29KYsBltxupY',
+  },
   vehicle: {
     icon: '🏍️',
     color: '#00e5ff',

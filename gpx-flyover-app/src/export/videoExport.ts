@@ -4,7 +4,7 @@ import { ensureAudioCtx } from '../audio/musicEngine';
 import { updateRouteDoneUpTo } from '../map/mapSetup';
 import { computePathIndex } from '../timeline/timelineMath';
 import { drawAltitudeLine, drawVehicleIcon, vehicleScreenPos } from '../vehicle/vehicleIcon';
-import { drawPhotoCover, getActivePhoto } from '../photos/photoEngine';
+import { drawPhotoCover, getActivePhotoLayers } from '../photos/photoEngine';
 import type {
   CameraParams,
   MusicTrack,
@@ -15,6 +15,144 @@ import type {
   VehicleParams,
   VideoParams,
 } from '../types/domain';
+
+// Le posizioni di musica/foto sono impostate dall'utente guardando la durata NOMINALE (il campo
+// "Durata video"); quando si registra a una velocità diversa da x1, la durata EFFETTIVA si
+// comprime/allunga di conseguenza (effectiveDuration = durata/velocità). Senza riscalare le
+// posizioni, un blocco piazzato ad es. al 90% della timeline nominale potrebbe cadere OLTRE la
+// durata effettiva e sparire in silenzio dal video esportato, invece di restare — proporzionalmente
+// — vicino alla fine del video accorciato/allungato. Il ritmo di riproduzione della musica in sé
+// (playbackRate) NON cambia: cambia solo QUANTA della porzione tagliata rientra nella finestra
+// sulla timeline (si ascolterà meno/più del brano a seconda che si acceleri o rallenti), esattamente
+// come una foto mostrata per meno/più tempo — nessun conflitto con "la musica non accelera mai".
+export function scaleMusicTracksForSpeed(musicTracks: MusicTrack[], speed: PlaybackSpeed): MusicTrack[] {
+  if (speed === 1) return musicTracks;
+  return musicTracks.map((t) => ({
+    ...t,
+    videoStart: t.videoStart / speed,
+    trimEnd: t.trimStart + (t.trimEnd - t.trimStart) / speed,
+  }));
+}
+
+export function scalePhotoClipsForSpeed(photoClips: PhotoClip[], speed: PlaybackSpeed): PhotoClip[] {
+  if (speed === 1) return photoClips;
+  return photoClips.map((p) => ({
+    ...p,
+    videoStart: p.videoStart / speed,
+    duration: p.duration / speed,
+  }));
+}
+
+// Attende fino all'istante di tempo reale target: aspetta con requestAnimationFrame quando
+// manca poco (così si sincronizza comunque con il repaint della mappa), altrimenti con
+// setTimeout per non tenere occupato il thread durante attese più lunghe. Se il momento target
+// è già passato, si risolve immediatamente (nessuna attesa) — usata SOLO per l'attesa
+// aggiuntiva quando siamo in anticipo sul ritmo, vedi waitForFrameAndPace più sotto.
+function waitUntil(targetTimeMs: number): Promise<void> {
+  return new Promise((resolve) => {
+    const check = () => {
+      const remaining = targetTimeMs - performance.now();
+      if (remaining <= 0) {
+        resolve();
+        return;
+      }
+      if (remaining > 20) {
+        setTimeout(check, remaining - 10);
+      } else {
+        requestAnimationFrame(check);
+      }
+    };
+    check();
+  });
+}
+
+// Aspetta SEMPRE almeno un vero repaint (requestAnimationFrame) dopo un jumpTo — necessario
+// perché il canvas della mappa catturato con drawImage() rifletta davvero la nuova inquadratura,
+// non quella precedente. In più, se siamo in anticipo sul ritmo reale atteso per questo
+// fotogramma, aspetta anche fino al momento giusto. Se invece siamo in ritardo (disegno troppo
+// lento), NON salta più l'attesa del repaint come prima — saltarla del tutto lasciava la mappa
+// catturata "vecchia" rispetto alla posizione icona già aggiornata, con l'effetto di icona che
+// sembra staccarsi/volare rispetto allo sfondo, oltre a contribuire agli scatti.
+async function waitForFrameAndPace(targetTimeMs: number): Promise<void> {
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  const remaining = targetTimeMs - performance.now();
+  if (remaining > 0) {
+    await waitUntil(targetTimeMs);
+  }
+}
+
+// Esportata: riusata anche dal percorso di rendering deterministico (deterministicExport.ts),
+// stesso identico pre-caricamento prima di iniziare a catturare/disegnare fotogrammi.
+export function waitForMapIdle(map: MapLibreMap, timeoutMs = 3000): Promise<void> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      map.off('idle', onIdle);
+      clearTimeout(timer);
+      resolve();
+    };
+    const onIdle = () => finish();
+    map.on('idle', onIdle);
+    const timer = setTimeout(finish, timeoutMs);
+  });
+}
+
+export interface ProfileBackground {
+  canvas: HTMLCanvasElement;
+  pw: number;
+  ph: number;
+  eleMin: number;
+  eleRange: number;
+}
+
+// Pre-disegna la sagoma statica del profilo altimetrico (sfondo sfumato + linea, 250 punti)
+// UNA sola volta per registrazione, invece di ricostruirla ad ogni fotogramma — l'unica parte
+// che cambia frame per frame è il pallino di posizione, disegnato separatamente sopra
+// nell'immagine già pronta. Ottimizzazione di performance (nessun cambiamento visivo):
+// riduce il lavoro per fotogramma nel ciclo di registrazione, che a 1080p/80s poteva far
+// perdere il passo al ritmo reale richiesto da canvas.captureStream(fps). Esportata: riusata
+// anche dal rendering deterministico (deterministicExport.ts).
+export function buildProfileBackground(track: Track, s: number): ProfileBackground {
+  const pw = 420 * s;
+  const ph = 90 * s;
+  const canvas = document.createElement('canvas');
+  canvas.width = pw;
+  canvas.height = ph;
+  const ctx = canvas.getContext('2d')!;
+  const profile = track.profile;
+  const eleMin = Math.min(...profile);
+  const eleMax = Math.max(...profile);
+  const eleRange = Math.max(1, eleMax - eleMin);
+
+  ctx.beginPath();
+  ctx.moveTo(0, ph);
+  profile.forEach((e, i) => {
+    const x = (i / (profile.length - 1)) * pw;
+    const y = ph - ((e - eleMin) / eleRange) * ph * 0.85;
+    ctx.lineTo(x, y);
+  });
+  ctx.lineTo(pw, ph);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, 0, 0, ph);
+  grad.addColorStop(0, 'rgba(255,204,0,0.55)');
+  grad.addColorStop(1, 'rgba(255,204,0,0.08)');
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+  ctx.lineWidth = 1.5 * s;
+  ctx.beginPath();
+  profile.forEach((e, i) => {
+    const x = (i / (profile.length - 1)) * pw;
+    const y = ph - ((e - eleMin) / eleRange) * ph * 0.85;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  return { canvas, pw, ph, eleMin, eleRange };
+}
 
 interface DrawOverlayArgs {
   title: string;
@@ -34,6 +172,7 @@ export function drawOverlayFrame(
   map: MapLibreMap,
   track: Track,
   vehicle: VehicleParams,
+  profileBg: ProfileBackground,
   args: DrawOverlayArgs,
 ): void {
   const { title, cur, progress, zoom, pitch, timeSec, photoClips } = args;
@@ -59,46 +198,18 @@ export function drawOverlayFrame(
   recCtx.fillText(title, 40 * s, 60 * s);
   recCtx.shadowBlur = 0;
 
-  // ---- profilo altimetrico (sagoma) in alto a destra ----
-  const pw = 420 * s;
-  const ph = 90 * s;
+  // ---- profilo altimetrico (sagoma pre-disegnata) in alto a destra ----
+  const { canvas: profileCanvas, pw, ph, eleMin, eleRange } = profileBg;
   const px = recCanvas.width - pw - 40 * s;
   const py = 20 * s;
+  recCtx.drawImage(profileCanvas, px, py);
+
+  // indicatore posizione attuale sul profilo (unica parte disegnata ad ogni fotogramma)
   const profile = track.profile;
-  const eleMin = Math.min(...profile);
-  const eleMax = Math.max(...profile);
-  const eleRange = Math.max(1, eleMax - eleMin);
-
-  recCtx.save();
-  recCtx.beginPath();
-  recCtx.moveTo(px, py + ph);
-  profile.forEach((e, i) => {
-    const x = px + (i / (profile.length - 1)) * pw;
-    const y = py + ph - ((e - eleMin) / eleRange) * ph * 0.85;
-    recCtx.lineTo(x, y);
-  });
-  recCtx.lineTo(px + pw, py + ph);
-  recCtx.closePath();
-  const grad = recCtx.createLinearGradient(0, py, 0, py + ph);
-  grad.addColorStop(0, 'rgba(255,204,0,0.55)');
-  grad.addColorStop(1, 'rgba(255,204,0,0.08)');
-  recCtx.fillStyle = grad;
-  recCtx.fill();
-  recCtx.strokeStyle = 'rgba(255,255,255,0.8)';
-  recCtx.lineWidth = 1.5 * s;
-  recCtx.beginPath();
-  profile.forEach((e, i) => {
-    const x = px + (i / (profile.length - 1)) * pw;
-    const y = py + ph - ((e - eleMin) / eleRange) * ph * 0.85;
-    if (i === 0) recCtx.moveTo(x, y);
-    else recCtx.lineTo(x, y);
-  });
-  recCtx.stroke();
-
-  // indicatore posizione attuale sul profilo
   const markerX = px + progress * pw;
   const markerIdx = Math.min(profile.length - 1, Math.round(progress * (profile.length - 1)));
   const markerY = py + ph - ((profile[markerIdx] - eleMin) / eleRange) * ph * 0.85;
+  recCtx.save();
   recCtx.fillStyle = '#fff';
   recCtx.beginPath();
   recCtx.arc(markerX, markerY, 5 * s, 0, Math.PI * 2);
@@ -127,9 +238,9 @@ export function drawOverlayFrame(
   recCtx.fillRect(30 * s, recCanvas.height - 25 * s, 520 * s * progress, 6 * s);
 
   // foto della timeline (se attiva in questo istante): copre tutto il resto
-  const activePhoto = getActivePhoto(photoClips, timeSec);
-  if (activePhoto) {
-    drawPhotoCover(recCtx, activePhoto.photo.img, recCanvas.width, recCanvas.height, activePhoto.alpha);
+  const activeLayers = getActivePhotoLayers(photoClips, timeSec);
+  for (const layer of activeLayers) {
+    drawPhotoCover(recCtx, layer.photo.img, recCanvas.width, recCanvas.height, layer.alpha, layer.photo.rotation);
   }
 }
 
@@ -162,14 +273,29 @@ export async function recordFlight(args: RecordFlightArgs): Promise<Blob> {
   const p = buildAnimParams(track, video, camera, title, effectiveDuration);
   let smoothBearing = initialBearing(p);
 
+  // Le posizioni di musica/foto sono pensate dall'utente sulla durata NOMINALE — a velocità
+  // diversa da x1 vanno riscalate sulla durata EFFETTIVA per restare proporzionalmente corrette
+  // (vedi scaleMusicTracksForSpeed/scalePhotoClipsForSpeed più sopra).
+  const scaledMusicTracks = scaleMusicTracksForSpeed(musicTracks, selectedSpeed);
+  const scaledPhotoClips = scalePhotoClipsForSpeed(photoClips, selectedSpeed);
+
   const [resW, resH] = video.resolution.split('x').map(Number);
   recCanvas.width = resW;
   recCanvas.height = resH;
   const recordedChunks: Blob[] = [];
   const videoStream = recCanvas.captureStream(p.fps);
+  const profileBg = buildProfileBackground(track, resW / 1280);
+
+  // Pre-caricamento: posiziona la camera sul primissimo fotogramma e attende che la mappa sia
+  // effettivamente pronta (tile visibili caricate) PRIMA di avviare MediaRecorder — altrimenti
+  // i primi secondi del video mostrerebbero tile a bassa risoluzione/incomplete, dato che la
+  // cattura partirebbe subito dopo il click invece che a mappa già pronta in quella posizione.
+  map.jumpTo(cameraForFrame(p, 0, smoothBearing));
+  updateRouteDoneUpTo(map, p.path, 0);
+  await waitForMapIdle(map);
 
   // --- musica di sottofondo (posizionamento libero per brano, opzionale) ---
-  const hasMusic = musicTracks.some((t) => t.trimEnd - t.trimStart > 0.05);
+  const hasMusic = scaledMusicTracks.some((t) => t.trimEnd - t.trimStart > 0.05);
   const tracks: MediaStreamTrack[] = [...videoStream.getVideoTracks()];
   const scheduledSources: AudioBufferSourceNode[] = [];
 
@@ -185,7 +311,7 @@ export async function recordFlight(args: RecordFlightArgs): Promise<Blob> {
     // impostate sulla timeline nominale, semplicemente tagliate se cadono oltre la
     // fine del video (più corto se accelerato, più lungo se rallentato).
     const startAt = ctx.currentTime + 0.05; // piccolo margine di sicurezza
-    musicTracks.forEach((track_) => {
+    scaledMusicTracks.forEach((track_) => {
       const length = track_.trimEnd - track_.trimStart;
       if (length <= 0.05) return;
       if (track_.videoStart >= effectiveDuration) return; // parte dopo la fine del video: salta
@@ -219,25 +345,36 @@ export async function recordFlight(args: RecordFlightArgs): Promise<Blob> {
   };
   mediaRecorder.start();
 
+  // canvas.captureStream(fps) cattura un fotogramma ogni 1/fps di tempo REALE, per tutta la
+  // durata della sessione (dall'avvio della registrazione a mediaRecorder.stop()) —
+  // indipendentemente da quanti fotogrammi il nostro ciclo riesce effettivamente a disegnare.
+  // Ogni fotogramma aspetta SEMPRE almeno un repaint reale dopo il jumpTo (altrimenti il canvas
+  // mappa catturato può restare "vecchio" rispetto alla posizione icona già aggiornata — visto
+  // che l'icona sembrava staccarsi/volare dallo sfondo) e in più si allinea all'orologio reale
+  // se siamo in anticipo, per far corrispondere la durata del video a quella attesa da
+  // selectedSpeed. Se il disegno è più lento del budget 1/fps la sessione può comunque allungarsi
+  // un po' — è il limite intrinseco della cattura in tempo reale, superabile solo con un
+  // rendering deterministico frame-by-frame (prompt-refactoring.md, priorità alta #1).
+  const recordingStart = performance.now();
   let lastPathIndex = 0;
   for (let i = 0; i < p.totalFrames; i++) {
     const videoTimeSec = i / p.fps;
-    const pathIndex = computePathIndex(videoTimeSec, p.totalFrames, p.fps, photoClips);
+    const pathIndex = computePathIndex(videoTimeSec, p.totalFrames, p.fps, scaledPhotoClips);
     while (lastPathIndex < pathIndex) {
       lastPathIndex++;
       smoothBearing = stepBearing(smoothBearing, lastPathIndex, p);
     }
     map.jumpTo(cameraForFrame(p, pathIndex, smoothBearing));
     updateRouteDoneUpTo(map, p.path, pathIndex);
-    await new Promise<void>((r) => requestAnimationFrame(() => r())); // attende il render della mappa
-    drawOverlayFrame(recCtx, recCanvas, map, track, vehicle, {
+    await waitForFrameAndPace(recordingStart + videoTimeSec * 1000);
+    drawOverlayFrame(recCtx, recCanvas, map, track, vehicle, profileBg, {
       title: p.title,
       cur: p.path[pathIndex],
       progress: (pathIndex + 1) / p.totalFrames,
       zoom: p.zoom,
       pitch: p.pitch,
       timeSec: videoTimeSec,
-      photoClips,
+      photoClips: scaledPhotoClips,
     });
   }
 

@@ -59,6 +59,33 @@ export async function decodeMusicFile(
   };
 }
 
+// Decodifica un file audio e lo posiziona esattamente al punto di riproduzione attuale
+// (pulsante "+" nella corsia musica), stesso comportamento del "+" nella corsia foto
+// (gpx-flyover.html:1079-1095, adattato alla musica: nessun equivalente diretto nell'originale,
+// che caricava i brani solo in coda tramite il selettore multiplo).
+export async function decodeMusicFileAtPlayhead(
+  file: File,
+  totalDurationSec: number,
+  playheadSec: number,
+  volume: number,
+): Promise<MusicTrack> {
+  const ctx = ensureAudioCtx(volume);
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = await ctx.decodeAudioData(arrayBuffer);
+  const videoStart = Math.max(0, Math.min(totalDurationSec - 0.5, playheadSec));
+  const availableSpace = Math.max(0.5, totalDurationSec - videoStart);
+  const initialTrimEnd = Math.min(buffer.duration, availableSpace);
+  return {
+    id: nextMusicId(),
+    name: file.name,
+    buffer,
+    duration: buffer.duration,
+    trimStart: 0,
+    trimEnd: initialTrimEnd,
+    videoStart,
+  };
+}
+
 export interface ActiveMusicTrack {
   trackIndex: number;
   offsetInTrack: number;

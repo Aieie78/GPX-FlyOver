@@ -4,7 +4,7 @@ import { resetMusicAnchor, stopMusicPreview, syncMusicPreview } from '../audio/m
 import { updateRouteDoneUpTo } from '../map/mapSetup';
 import { computePathIndex } from '../timeline/timelineMath';
 import { drawAltitudeLine, drawVehicleIcon, vehicleScreenPos } from '../vehicle/vehicleIcon';
-import { drawPhotoCover, getActivePhoto } from '../photos/photoEngine';
+import { drawPhotoCover, getActivePhotoLayers } from '../photos/photoEngine';
 import type {
   AnimParams,
   CameraParams,
@@ -58,6 +58,7 @@ export class PreviewEngine {
   private overlayCtx: CanvasRenderingContext2D;
   private state: PreviewState | null = null;
   private rafHandle: number | null = null;
+  private drawHandle: number | null = null;
 
   constructor(deps: PreviewEngineDeps) {
     this.deps = deps;
@@ -80,6 +81,8 @@ export class PreviewEngine {
   stop(): void {
     if (this.rafHandle != null) cancelAnimationFrame(this.rafHandle);
     this.rafHandle = null;
+    if (this.drawHandle != null) cancelAnimationFrame(this.drawHandle);
+    this.drawHandle = null;
     if (this.state) this.state.playing = false;
     this.overlayCtx.clearRect(0, 0, this.deps.overlayCanvas.width, this.deps.overlayCanvas.height);
     stopMusicPreview();
@@ -206,14 +209,30 @@ export class PreviewEngine {
   private renderFrame(i: number): void {
     const s = this.state;
     if (!s) return;
-    const { map, overlayCanvas } = this.deps;
-    const track = this.deps.getTrack();
-    const vehicle = this.deps.getVehicleParams();
+    const { map } = this.deps;
     const pathIndex = s.pathIndex;
 
     map.jumpTo(cameraForFrame(s, pathIndex, s.smoothBearing));
     updateRouteDoneUpTo(map, s.path, pathIndex);
     syncMusicPreview(this.deps.getMusicTracks(), s.playing);
+
+    // Con il terreno 3D attivo, la proiezione schermo di un punto (map.project, usata da
+    // vehicleScreenPos per posizionare l'icona) riflette l'aggancio al terreno solo dopo che
+    // MapLibre ha processato il render successivo a jumpTo — leggerla nello stesso istante
+    // sincrono di jumpTo può dare una posizione disallineata di un frame. La registrazione
+    // (recordFlight in videoExport.ts) aspetta già un requestAnimationFrame dopo ogni jumpTo
+    // prima di disegnare l'icona (gpx-flyover.html:802): replichiamo lo stesso ordine qui.
+    if (this.drawHandle != null) cancelAnimationFrame(this.drawHandle);
+    this.drawHandle = requestAnimationFrame(() => {
+      this.drawHandle = null;
+      this.drawOverlay(i, s, pathIndex);
+    });
+  }
+
+  private drawOverlay(i: number, s: PreviewState, pathIndex: number): void {
+    const { map, overlayCanvas } = this.deps;
+    const track = this.deps.getTrack();
+    const vehicle = this.deps.getVehicleParams();
 
     // ridimensiona l'overlay se necessario e disegna l'icona del mezzo
     const rect = map.getContainer().getBoundingClientRect();
@@ -226,9 +245,16 @@ export class PreviewEngine {
     drawAltitudeLine(this.overlayCtx, pos.groundX, pos.groundY, pos.x, pos.y, vehicle.color, 1);
     drawVehicleIcon(this.overlayCtx, pos.x, pos.y, 1, vehicle);
 
-    const activePhoto = getActivePhoto(this.deps.getPhotoClips(), i / s.fps);
-    if (activePhoto) {
-      drawPhotoCover(this.overlayCtx, activePhoto.photo.img, overlayCanvas.width, overlayCanvas.height, activePhoto.alpha);
+    const activeLayers = getActivePhotoLayers(this.deps.getPhotoClips(), i / s.fps);
+    for (const layer of activeLayers) {
+      drawPhotoCover(
+        this.overlayCtx,
+        layer.photo.img,
+        overlayCanvas.width,
+        overlayCanvas.height,
+        layer.alpha,
+        layer.photo.rotation,
+      );
     }
 
     this.deps.onTick({

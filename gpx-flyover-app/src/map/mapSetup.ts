@@ -18,6 +18,7 @@ export function setupRouteLayers(map: MapLibreMap, track: Track, token: string):
     maxzoom: 14,
   });
   map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.3 });
+
   // setFog non esiste più nei tipi di questa versione di MapLibre GL JS (era già protetto da
   // try/catch nell'originale in previsione di versioni senza questo metodo); accesso
   // difensivo via cast per preservare lo stesso comportamento a runtime.
@@ -34,6 +35,7 @@ export function setupRouteLayers(map: MapLibreMap, track: Track, token: string):
       coordinates: track.pts.map((p) => [p.lon, p.lat, p.ele]),
     },
   };
+
   map.addSource('route', { type: 'geojson', data: geojson });
   map.addSource('routeDone', {
     type: 'geojson',

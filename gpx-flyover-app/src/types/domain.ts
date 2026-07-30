@@ -86,12 +86,15 @@ export interface MusicTrack {
   videoStart: number; // posizione di attacco nel video, posizionamento libero
 }
 
+export type PhotoRotation = 0 | 90 | 180 | 270;
+
 export interface PhotoClip {
   id: number;
   name: string;
   img: HTMLImageElement;
   videoStart: number;
   duration: number; // durata di visualizzazione
+  rotation: PhotoRotation; // correzione orientamento, in step di 90°
 }
 
 // Parametri di animazione costruiti da buildAnimParams (gpx-flyover.html:679), condivisi da
