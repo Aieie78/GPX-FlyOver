@@ -45,3 +45,21 @@
   display: none;
   z-index: 3;
 }
+
+/* Maniglia trascinabile sopra ogni sovrapposizione testuale visibile in anteprima (vedi
+ * TextOverlayHandle.tsx) — l'unico elemento cliccabile sopra la mappa oltre ai suoi stessi
+ * controlli nativi, il resto del canvas overlay resta pointer-events:none. */
+.text-overlay-handle {
+  position: absolute;
+  cursor: grab;
+  border: 1px dashed rgba(255, 255, 255, 0.7);
+  border-radius: 4px;
+  z-index: 4;
+}
+.text-overlay-handle:hover {
+  border-color: var(--accent);
+  background: rgba(170, 59, 255, 0.08);
+}
+.text-overlay-handle:active {
+  cursor: grabbing;
+}

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { CAMERA_PRESETS } from '../../camera/cameraPresets';
 import { useProjectStore } from '../../store/useProjectStore';
 
@@ -6,15 +7,23 @@ import { useProjectStore } from '../../store/useProjectStore';
 export function CameraPanel() {
   const camera = useProjectStore((s) => s.camera);
   const updateCamera = useProjectStore((s) => s.updateCamera);
+  // Il nome del preset selezionato è solo un'etichetta della UI (non fa parte dello stato
+  // camera): se dopo la scelta si modifica un campo a mano, la select resta comunque com'è
+  // finché non se ne sceglie un altro — non c'è un modo affidabile di "far tornare indietro"
+  // la label a "nessun preset" senza confrontare i 4 valori uno per uno.
+  const [selectedPreset, setSelectedPreset] = useState('');
 
   return (
     <>
       <label>Preset</label>
       <select
-        value=""
+        value={selectedPreset}
         onChange={(e) => {
           const preset = CAMERA_PRESETS.find((p) => p.name === e.target.value);
-          if (preset) updateCamera(preset.params);
+          if (preset) {
+            updateCamera(preset.params);
+            setSelectedPreset(preset.name);
+          }
         }}
       >
         <option value="" disabled>

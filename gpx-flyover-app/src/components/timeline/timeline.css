@@ -151,15 +151,15 @@
   margin-bottom: 2px;
 }
 
-/* Il righello (14px) non ha spazio verticale per la scrollbar orizzontale senza che questa
- * copra i numeri dei secondi — nasconderla qui non toglie nulla: scorrere/zoomare da una
- * qualunque delle altre righe (barra video, musica, foto) tiene comunque il righello allineato,
- * dato che lo scorrimento è sincronizzato tra tutte le righe (useTimelineRowScroll). */
-.timeline-ruler .transport-row__track-scroll {
-  scrollbar-width: none;
-}
-.timeline-ruler .transport-row__track-scroll::-webkit-scrollbar {
-  display: none;
+/* Contenitore SEMPRE overflow:hidden (mai una scrollbar nativa, a differenza delle altre righe):
+ * il righello è alto solo 14px, senza spazio per riservare l'altezza di una scrollbar senza
+ * farla finire sopra i numeri dei secondi. Il contenuto scorre via CSS transform (vedi
+ * TimelineRuler.tsx), pilotato dallo stesso scrollLeft condiviso — resta comunque sincronizzato
+ * scorrendo/zoomando da una qualunque delle altre righe (barra video, musica, foto). */
+.timeline-ruler__viewport {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .timeline-ruler__track {

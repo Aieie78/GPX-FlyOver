@@ -1,4 +1,5 @@
 import { useProjectStore } from '../../store/useProjectStore';
+import { useTimelineViewStore } from '../../store/useTimelineViewStore';
 import { useTimelineRowScroll } from '../../timeline/useTimelineRowScroll';
 import '../layout/transportGrid.css';
 
@@ -22,9 +23,17 @@ function fmtTick(sec: number): string {
 // Righello dei secondi sopra le corsie musica/foto — riusa la stessa griglia
 // (.transport-row, transportGrid.css) delle altre righe così i tick restano allineati in
 // orizzontale ai blocchi sottostanti, senza calcoli di posizione indipendenti.
+//
+// A differenza delle altre righe (che scorrono con una vera scrollbar nativa overflow-x:auto),
+// qui il contenuto è spostato con un CSS transform pilotato direttamente dallo scrollLeft
+// condiviso (useTimelineViewStore), dentro un contenitore SEMPRE overflow:hidden — il righello è
+// alto solo 14px e non c'è spazio per riservare l'altezza di una scrollbar senza farla finire
+// sopra i numeri dei secondi; lo scorrimento resta comunque sincronizzato perché lo si guida
+// dalle altre righe (barra video/musica/foto), che restano scrollabili normalmente.
 export function TimelineRuler() {
   const totalDur = useProjectStore((s) => s.video.durationSec);
-  const { scrollRef, onScroll, onWheel, zoom } = useTimelineRowScroll();
+  const scrollLeft = useTimelineViewStore((s) => s.scrollLeft);
+  const { onWheel, zoom } = useTimelineRowScroll();
   if (totalDur <= 0) return null;
 
   // Il passo dei tick si infittisce con lo zoom, come nella barra di scorrimento di un editor
@@ -37,8 +46,11 @@ export function TimelineRuler() {
   return (
     <div className="transport-row timeline-ruler">
       <div className="transport-row__prefix" />
-      <div className="transport-row__track-scroll" ref={scrollRef} onScroll={onScroll} onWheel={onWheel}>
-        <div className="timeline-ruler__track" style={{ width: `${zoom * 100}%` }}>
+      <div className="timeline-ruler__viewport" onWheel={onWheel}>
+        <div
+          className="timeline-ruler__track"
+          style={{ width: `${zoom * 100}%`, transform: `translateX(-${scrollLeft}px)` }}
+        >
           {ticks.map((t) => {
             const pct = (t / totalDur) * 100;
             const isLast = pct > 100 - 100 / (12 * zoom);

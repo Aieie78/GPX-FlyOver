@@ -64,6 +64,7 @@ const initialState: ProjectState = {
     size: 0.55,
     use3DAltitude: false,
     altExaggeration: 8,
+    showLiveStats: false,
   },
   musicTracks: [],
   musicVolume: 0.6,
@@ -153,7 +154,7 @@ export const useProjectStore = create<ProjectStore>()(
         }),
       addTextOverlay: (text, videoStart, duration) => {
         const id = nextTextId();
-        set((s) => ({ textOverlays: [...s.textOverlays, { id, text, videoStart, duration }] }));
+        set((s) => ({ textOverlays: [...s.textOverlays, { id, text, videoStart, duration, x: 0.5, y: 0.85 }] }));
         return id;
       },
       updateTextOverlay: (id, patch) =>

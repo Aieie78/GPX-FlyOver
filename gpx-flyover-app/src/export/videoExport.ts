@@ -6,6 +6,7 @@ import { updateRouteDoneUpTo } from '../map/mapSetup';
 import { computePathIndex } from '../timeline/timelineMath';
 import { drawAltitudeLine, drawVehicleIcon, vehicleScreenPos } from '../vehicle/vehicleIcon';
 import { drawPhotoCover, getActivePhotoLayers } from '../photos/photoEngine';
+import { drawLiveStatsBox } from '../stats/liveStatsOverlay';
 import { drawTextOverlay, getActiveTextOverlays } from '../text/textEngine';
 import type {
   CameraParams,
@@ -285,7 +286,12 @@ export function drawOverlayFrame(
   // sovrapposizioni testuali della timeline (didascalie/titoli multipli)
   const activeTexts = getActiveTextOverlays(textOverlays, timeSec);
   for (const t of activeTexts) {
-    drawTextOverlay(recCtx, recCanvas.width, recCanvas.height, t.overlay.text, t.alpha);
+    drawTextOverlay(recCtx, recCanvas.width, recCanvas.height, t.overlay.text, t.alpha, t.overlay.x, t.overlay.y);
+  }
+
+  // riquadro velocità/quota/posizione in tempo reale, se attivato
+  if (vehicle.showLiveStats) {
+    drawLiveStatsBox(recCtx, recCanvas.width, recCanvas.height, cur);
   }
 }
 

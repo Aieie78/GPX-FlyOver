@@ -6,6 +6,7 @@ import { setupRouteLayers, styleUrlFor } from '../../map/mapSetup';
 import { PreviewEngine } from '../../preview/PreviewEngine';
 import { useProjectStore } from '../../store/useProjectStore';
 import { usePlaybackStore } from '../../store/usePlaybackStore';
+import { TextOverlayHandle } from './TextOverlayHandle';
 import './mapCanvas.css';
 
 // Monta MapLibre GL e ricrea mappa/percorso/PreviewEngine ogni volta che viene caricata una
@@ -116,6 +117,7 @@ export function MapCanvas() {
       {!track && <span className="map-canvas__placeholder">Carica un file GPX per iniziare</span>}
       <canvas className="map-canvas__overlay" ref={overlayRef} />
       <canvas className="map-canvas__rec" ref={recCanvasRef} />
+      <TextOverlayHandle containerRef={containerRef} />
     </div>
   );
 }

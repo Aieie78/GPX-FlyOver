@@ -39,6 +39,15 @@ export function resamplePath(track: Track, nFrames: number): PathPoint[] {
     const d0 = track.cum[idx - 1];
     const d1 = track.cum[idx];
     const t = d1 > d0 ? (targetDist - d0) / (d1 - d0) : 0;
+
+    // Velocità reale istantanea: dai timestamp <time> originali del tratto p0→p1 (se presenti),
+    // NON dal ritmo del video — indipendente da durata/fps/velocità di riproduzione impostati.
+    let speedKmh: number | null = null;
+    if (p0.time && p1.time) {
+      const dtSec = (p1.time.getTime() - p0.time.getTime()) / 1000;
+      if (dtSec > 0) speedKmh = ((d1 - d0) / dtSec) * 3.6;
+    }
+
     out.push({
       lat: p0.lat + (p1.lat - p0.lat) * t,
       lon: p0.lon + (p1.lon - p0.lon) * t,
@@ -46,6 +55,7 @@ export function resamplePath(track: Track, nFrames: number): PathPoint[] {
       camLon: track.smoothedLon[idx - 1] + (track.smoothedLon[idx] - track.smoothedLon[idx - 1]) * t,
       ele: track.smoothedEle[idx - 1] + (track.smoothedEle[idx] - track.smoothedEle[idx - 1]) * t,
       dist: targetDist,
+      speedKmh,
     });
   }
   return out;

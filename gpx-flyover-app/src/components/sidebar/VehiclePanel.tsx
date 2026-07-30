@@ -16,6 +16,7 @@ export function VehiclePanel() {
             <option value="🚗">Macchina 🚗</option>
             <option value="🚁">Elicottero 🚁</option>
             <option value="✈️">Aereo ✈️</option>
+            <option value="🚢">Nave 🚢</option>
           </select>
         </div>
         <div>
@@ -64,6 +65,20 @@ export function VehiclePanel() {
         value={vehicle.altExaggeration}
         onChange={(e) => updateVehicle({ altExaggeration: parseFloat(e.target.value) || 8 })}
       />
+      <label>
+        <input
+          type="checkbox"
+          checked={vehicle.showLiveStats}
+          onChange={(e) => updateVehicle({ showLiveStats: e.target.checked })}
+        />
+        Mostra dati in tempo reale (velocità/quota/posizione)
+      </label>
+      {vehicle.showLiveStats && (
+        <p className="field-hint">
+          La velocità viene dai timestamp GPX originali (indipendente dalla velocità di riproduzione) — "n/d" se il
+          file non ha dati di tempo.
+        </p>
+      )}
     </>
   );
 }

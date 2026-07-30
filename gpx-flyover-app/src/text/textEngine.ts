@@ -32,39 +32,67 @@ export function getActiveTextOverlays(overlays: TextOverlay[], timeSec: number):
   return active;
 }
 
-// Disegna una sovrapposizione testuale centrata orizzontalmente, in stile "didascalia" (barra
-// semi-trasparente dietro al testo per leggibilità sopra qualunque sfondo), posizionata nel terzo
-// inferiore del fotogramma — sopra la barra statistiche/avanzamento già disegnata da
-// drawOverlayFrame (videoExport.ts), che occupa la fascia più bassa.
+export interface TextBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+// Calcola il riquadro (in coordinate px del canvas, centro in xFrac/yFrac come frazione 0..1
+// della larghezza/altezza) di una sovrapposizione testuale — condiviso da drawTextOverlay (per
+// disegnare lo sfondo) e dalla maniglia HTML trascinabile nell'anteprima (TextOverlayHandle.tsx),
+// così restano sempre coerenti: la maniglia copre esattamente lo stesso riquadro che si vede.
+export function computeTextBox(
+  measureCtx: CanvasRenderingContext2D,
+  canvasW: number,
+  canvasH: number,
+  text: string,
+  xFrac: number,
+  yFrac: number,
+): TextBox {
+  const s = canvasW / 1280;
+  const fontSize = 30 * s;
+  measureCtx.font = `bold ${fontSize}px system-ui`;
+  const metrics = measureCtx.measureText(text || ' ');
+  const paddingX = 20 * s;
+  const paddingY = 12 * s;
+  const w = metrics.width + paddingX * 2;
+  const h = fontSize + paddingY * 2;
+  return { x: xFrac * canvasW - w / 2, y: yFrac * canvasH - h / 2, w, h };
+}
+
+// Disegna una sovrapposizione testuale in stile "didascalia" (barra semi-trasparente dietro al
+// testo per leggibilità sopra qualunque sfondo), centrata su (xFrac, yFrac) — posizione
+// personalizzabile trascinando la maniglia nell'anteprima (TextOverlayHandle.tsx), di default nel
+// terzo inferiore del fotogramma, sopra la barra statistiche/avanzamento (drawOverlayFrame).
 export function drawTextOverlay(
   ctx: CanvasRenderingContext2D,
   canvasW: number,
   canvasH: number,
   text: string,
   alpha: number,
+  xFrac: number,
+  yFrac: number,
 ): void {
   if (!text.trim() || alpha <= 0) return;
   const s = canvasW / 1280;
   const fontSize = 30 * s;
-  const y = canvasH - 130 * s;
+  const box = computeTextBox(ctx, canvasW, canvasH, text, xFrac, yFrac);
+  const cx = box.x + box.w / 2;
+  const cy = box.y + box.h / 2;
 
   ctx.save();
   ctx.globalAlpha = alpha;
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillRect(box.x, box.y, box.w, box.h);
+
   ctx.font = `bold ${fontSize}px system-ui`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  const metrics = ctx.measureText(text);
-  const paddingX = 20 * s;
-  const paddingY = 12 * s;
-  const boxW = metrics.width + paddingX * 2;
-  const boxH = fontSize + paddingY * 2;
-
-  ctx.fillStyle = 'rgba(0,0,0,0.5)';
-  ctx.fillRect(canvasW / 2 - boxW / 2, y - boxH / 2, boxW, boxH);
-
   ctx.fillStyle = '#fff';
   ctx.shadowColor = 'rgba(0,0,0,0.6)';
   ctx.shadowBlur = 6 * s;
-  ctx.fillText(text, canvasW / 2, y);
+  ctx.fillText(text, cx, cy);
   ctx.restore();
 }

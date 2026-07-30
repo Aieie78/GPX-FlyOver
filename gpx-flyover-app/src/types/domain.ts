@@ -37,6 +37,9 @@ export interface PathPoint {
   camLon: number;
   ele: number;
   dist: number; // metri dall'inizio percorso
+  // Velocità reale istantanea (km/h), interpolata dai timestamp <time> originali del GPX tra i
+  // due punti grezzi più vicini — null se il GPX non ha dati di tempo validi in quel tratto.
+  speedKmh: number | null;
 }
 
 export type VideoResolution = '1280x720' | '1920x1080' | '2560x1440';
@@ -68,7 +71,7 @@ export interface MapParams {
   customStyleUrl: string; // fallback, ha precedenza su styleId se non vuoto
 }
 
-export type VehicleIcon = '🏍️' | '🚗' | '🚁' | '✈️';
+export type VehicleIcon = '🏍️' | '🚗' | '🚁' | '✈️' | '🚢';
 export type VehicleIconStyle = 'filled' | 'outline' | 'dot';
 
 export interface VehicleParams {
@@ -78,6 +81,7 @@ export interface VehicleParams {
   size: number;
   use3DAltitude: boolean; // "quota reale" per tracce aeree
   altExaggeration: number;
+  showLiveStats: boolean; // riquadro in basso a destra con velocità/quota/posizione in tempo reale
 }
 
 export interface MusicTrack {
@@ -101,6 +105,8 @@ export interface TextOverlay {
   text: string;
   videoStart: number;
   duration: number;
+  x: number; // 0..1, frazione della larghezza del fotogramma (posizione del centro)
+  y: number; // 0..1, frazione dell'altezza del fotogramma (posizione del centro)
 }
 
 export type PhotoRotation = 0 | 90 | 180 | 270;

@@ -5,6 +5,7 @@ import { updateRouteDoneUpTo } from '../map/mapSetup';
 import { computePathIndex } from '../timeline/timelineMath';
 import { drawAltitudeLine, drawVehicleIcon, vehicleScreenPos } from '../vehicle/vehicleIcon';
 import { drawPhotoCover, getActivePhotoLayers } from '../photos/photoEngine';
+import { drawLiveStatsBox } from '../stats/liveStatsOverlay';
 import { drawTextOverlay, getActiveTextOverlays } from '../text/textEngine';
 import type {
   AnimParams,
@@ -262,7 +263,19 @@ export class PreviewEngine {
 
     const activeTexts = getActiveTextOverlays(this.deps.getTextOverlays(), i / s.fps);
     for (const t of activeTexts) {
-      drawTextOverlay(this.overlayCtx, overlayCanvas.width, overlayCanvas.height, t.overlay.text, t.alpha);
+      drawTextOverlay(
+        this.overlayCtx,
+        overlayCanvas.width,
+        overlayCanvas.height,
+        t.overlay.text,
+        t.alpha,
+        t.overlay.x,
+        t.overlay.y,
+      );
+    }
+
+    if (vehicle.showLiveStats) {
+      drawLiveStatsBox(this.overlayCtx, overlayCanvas.width, overlayCanvas.height, s.path[pathIndex]);
     }
 
     this.deps.onTick({
