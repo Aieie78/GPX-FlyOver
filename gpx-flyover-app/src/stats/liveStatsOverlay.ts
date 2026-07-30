@@ -54,7 +54,7 @@ export function drawLiveStatsBox(ctx: CanvasRenderingContext2D, canvasW: number,
   const lineH = h / 5;
   const textX = x + w - pad;
   const speedLabel = cur.speedKmh != null ? `Velocità: ${Math.round(cur.speedKmh)} km/h` : 'Velocità: n/d';
-  const timeLabel = cur.clockTimeMs != null ? `Ora: ${formatClockTime(cur.clockTimeMs)}` : 'Ora: n/d';
+  const timeLabel = cur.clockTimeMs != null ? `Ora GMT: ${formatClockTime(cur.clockTimeMs)}` : 'Ora GMT: n/d';
   const lat = formatDMS(cur.lat, 'N', 'S');
   const lon = formatDMS(cur.lon, 'E', 'W');
 
