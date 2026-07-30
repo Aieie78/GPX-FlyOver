@@ -1,22 +1,40 @@
-import { useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { Download } from 'lucide-react';
 import { getSessionEngine, getSessionMap, getSessionRecCanvas } from '../../app/flyoverSession';
+import { ExportCancelledError, isDeterministicExportSupported, recordFlightDeterministic } from '../../export/deterministicExport';
 import { recordFlight } from '../../export/videoExport';
 import { useProjectStore } from '../../store/useProjectStore';
 import { usePlaybackStore } from '../../store/usePlaybackStore';
 
-// Port dei pulsanti 2/3 e dell'output di gpx-flyover.html:204-212, 730-818, 1501-1505.
-export function ActionsPanel() {
+interface ActionsPanelProps {
+  onLoad: () => void;
+}
+
+// Port dei pulsanti 1/2/3 e dell'output di gpx-flyover.html:203-212, 730-818, 1386-1395,
+// 1501-1505. Sticky in cima alla sidebar (Sidebar.tsx), sempre visibile durante lo scroll
+// delle sezioni sottostanti.
+export function ActionsPanel({ onLoad }: ActionsPanelProps) {
   const canPreview = usePlaybackStore((s) => s.canPreview);
   const isRecording = usePlaybackStore((s) => s.isRecording);
   const setIsRecording = usePlaybackStore((s) => s.setIsRecording);
   const statusMessage = usePlaybackStore((s) => s.statusMessage);
   const setStatusMessage = usePlaybackStore((s) => s.setStatusMessage);
   const playbackSpeed = usePlaybackStore((s) => s.playbackSpeed);
+  const durationSec = useProjectStore((s) => s.video.durationSec);
 
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [exportProgress, setExportProgress] = useState(0);
+  const cancelTokenRef = useRef<{ cancelled: boolean } | null>(null);
+
+  // Calcolato una volta sola: il supporto WebCodecs non cambia durante la sessione.
+  const deterministicSupported = useMemo(() => isDeterministicExportSupported(), []);
 
   const handlePreview = () => {
     getSessionEngine()?.start();
+  };
+
+  const handleCancelExport = () => {
+    if (cancelTokenRef.current) cancelTokenRef.current.cancelled = true;
   };
 
   const handleRecord = async () => {
@@ -27,12 +45,12 @@ export function ActionsPanel() {
 
     getSessionEngine()?.stop();
     setIsRecording(true);
-    setStatusMessage('Registrazione in corso... non chiudere la finestra.');
+    setExportProgress(0);
     try {
       const { video, camera, vehicle, musicTracks, musicVolume, title } = useProjectStore.getState();
       const photoClips = useProjectStore.getState().photoClips;
       recCanvas.style.display = 'block';
-      const blob = await recordFlight({
+      const recordArgs = {
         map,
         track,
         recCanvas,
@@ -44,26 +62,80 @@ export function ActionsPanel() {
         title,
         selectedSpeed: playbackSpeed,
         photoClips,
-      });
+      };
+
+      let blob: Blob;
+      if (deterministicSupported) {
+        setStatusMessage('Generazione video in corso...');
+        const cancelToken = { cancelled: false };
+        cancelTokenRef.current = cancelToken;
+        blob = await recordFlightDeterministic(
+          recordArgs,
+          (fraction) => setExportProgress(fraction),
+          () => cancelToken.cancelled,
+        );
+      } else {
+        // Browser senza WebCodecs (VideoEncoder/AudioEncoder): niente crash né errore silenzioso,
+        // si torna alla registrazione in tempo reale esistente, con un avviso chiaro sul motivo
+        // (è più lenta e può risentire di scatti su risoluzioni/durate impegnative).
+        setStatusMessage(
+          'Il browser non supporta la codifica ottimizzata (WebCodecs): uso la registrazione in tempo reale, più lenta e meno fluida su video lunghi/pesanti.',
+        );
+        blob = await recordFlight(recordArgs);
+      }
+
       if (videoUrl) URL.revokeObjectURL(videoUrl);
       setVideoUrl(URL.createObjectURL(blob));
       setStatusMessage('Video generato! Anteprima qui sotto, poi scaricalo.');
     } catch (err) {
-      console.error(err);
-      setStatusMessage(err instanceof Error ? `Errore durante la registrazione: ${err.message}` : 'Errore durante la registrazione.');
+      if (err instanceof ExportCancelledError) {
+        setStatusMessage('Esportazione annullata.');
+      } else {
+        console.error(err);
+        setStatusMessage(err instanceof Error ? `Errore durante la registrazione: ${err.message}` : 'Errore durante la registrazione.');
+      }
     } finally {
       setIsRecording(false);
+      cancelTokenRef.current = null;
+      // Nasconde di nuovo il canvas di registrazione (rimasto visibile in cima a mappa/overlay,
+      // z-index più alto) così l'anteprima torna visibile per un nuovo ciclo Anteprima/Registra
+      // senza dover ricaricare la pagina.
+      recCanvas.style.display = 'none';
     }
   };
 
+  // Port di updateRecordSpeedNote, gpx-flyover.html:1386-1395.
+  const recordSpeedNote =
+    playbackSpeed !== 1
+      ? `Verrà registrato a x${playbackSpeed} → durata effettiva video: ${(durationSec / playbackSpeed).toFixed(1)}s`
+      : '';
+
   return (
     <div className="sidebar-actions">
-      <button type="button" className="action-btn secondary" disabled={!canPreview || isRecording} onClick={handlePreview}>
+      <button type="button" className="action-btn" onClick={onLoad}>
+        1. Carica traccia sulla mappa
+      </button>
+      <button type="button" className="action-btn" disabled={!canPreview || isRecording} onClick={handlePreview}>
         2. Anteprima (senza registrare)
       </button>
       <button type="button" className="action-btn" disabled={!canPreview || isRecording} onClick={handleRecord}>
         3. Registra e genera video
       </button>
+      {recordSpeedNote && <p className="record-speed-note">{recordSpeedNote}</p>}
+
+      {isRecording && deterministicSupported && (
+        <div className="export-progress">
+          <div className="export-progress__bar">
+            <div className="export-progress__fill" style={{ width: `${(exportProgress * 100).toFixed(1)}%` }} />
+          </div>
+          <div className="export-progress__row">
+            <span className="export-progress__label">{Math.round(exportProgress * 100)}%</span>
+            <button type="button" className="export-progress__cancel" onClick={handleCancelExport}>
+              Annulla
+            </button>
+          </div>
+        </div>
+      )}
 
       {statusMessage && <p className="status-text">{statusMessage}</p>}
 
@@ -72,7 +144,7 @@ export function ActionsPanel() {
           {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
           <video className="video-output" src={videoUrl} controls />
           <a className="download-link" href={videoUrl} download="giro_flyover.webm">
-            ⬇️ Scarica video (.webm)
+            <Download size={13} /> Scarica video (.webm)
           </a>
         </>
       )}

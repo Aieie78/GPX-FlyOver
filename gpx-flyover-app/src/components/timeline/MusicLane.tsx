@@ -1,22 +1,28 @@
 import { useRef } from 'react';
-import type { MouseEvent as ReactMouseEvent } from 'react';
+import type { ChangeEvent, MouseEvent as ReactMouseEvent } from 'react';
+import { Music, Plus, X } from 'lucide-react';
 import { getSessionEngine } from '../../app/flyoverSession';
-import { fmtMinSec } from '../../audio/musicEngine';
+import { decodeMusicFileAtPlayhead, fmtMinSec } from '../../audio/musicEngine';
 import { snapValue } from '../../timeline/timelineMath';
 import { useProjectStore } from '../../store/useProjectStore';
 import { usePlaybackStore } from '../../store/usePlaybackStore';
 import type { MusicTrack } from '../../types/domain';
+import '../layout/transportGrid.css';
 
 type DragMode = 'move' | 'left' | 'right';
 
 // Port di renderMusicLane/startMusicDrag di gpx-flyover.html:867-961.
 export function MusicLane() {
   const laneRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const musicTracks = useProjectStore((s) => s.musicTracks);
+  const addMusicTrack = useProjectStore((s) => s.addMusicTrack);
   const updateMusicTrack = useProjectStore((s) => s.updateMusicTrack);
   const removeMusicTrack = useProjectStore((s) => s.removeMusicTrack);
   const totalDur = useProjectStore((s) => s.video.durationSec);
+  const musicVolume = useProjectStore((s) => s.musicVolume);
   const currentTimeSec = usePlaybackStore((s) => s.currentTimeSec);
+  const setStatusMessage = usePlaybackStore((s) => s.setStatusMessage);
 
   const startDrag = (e: ReactMouseEvent, track: MusicTrack, mode: DragMode) => {
     e.preventDefault();
@@ -93,12 +99,34 @@ export function MusicLane() {
     engine.seekTo(Math.round(frac * (totalFrames - 1)));
   };
 
+  const handleAddClick = () => fileInputRef.current?.click();
+
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const playheadSec = usePlaybackStore.getState().currentTimeSec;
+      const track = await decodeMusicFileAtPlayhead(file, totalDur, playheadSec, musicVolume);
+      addMusicTrack(track);
+    } catch (err) {
+      console.error('Errore decodifica audio', file.name, err);
+      setStatusMessage(`Impossibile leggere il file audio "${file.name}" — formato non supportato?`);
+    }
+  };
+
   const playheadPct = totalDur > 0 ? Math.max(0, Math.min(100, (currentTimeSec / totalDur) * 100)) : 0;
 
   return (
-    <div className="lane-row">
-      <div className="lane-row__label">🎵 Musica</div>
-      <div className="lane" ref={laneRef} onClick={handleLaneClick}>
+    <div className="transport-row">
+      <div className="transport-row__prefix lane-row__label">
+        <Music size={13} /> Musica
+        <button type="button" className="lane-add" title="Aggiungi brano al punto attuale della riproduzione" onClick={handleAddClick}>
+          <Plus size={13} />
+        </button>
+        <input ref={fileInputRef} type="file" accept="audio/*" style={{ display: 'none' }} onChange={handleFileChange} />
+      </div>
+      <div className="transport-row__track lane" ref={laneRef} onClick={handleLaneClick}>
         {musicTracks.map((t) => {
           const length = t.trimEnd - t.trimStart;
           const leftPct = (t.videoStart / totalDur) * 100;
@@ -113,7 +141,7 @@ export function MusicLane() {
             >
               <div className="lane-block__label">{t.name}</div>
               <div className="lane-block__remove" onClick={() => removeMusicTrack(t.id)}>
-                ✕
+                <X size={10} />
               </div>
               <div className="lane-block__resize lane-block__resize--left" onMouseDown={(e) => startDrag(e, t, 'left')} />
               <div className="lane-block__resize lane-block__resize--right" onMouseDown={(e) => startDrag(e, t, 'right')} />

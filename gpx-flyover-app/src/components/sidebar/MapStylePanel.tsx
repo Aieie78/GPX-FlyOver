@@ -1,3 +1,4 @@
+import { Info } from 'lucide-react';
 import { useProjectStore } from '../../store/useProjectStore';
 import type { MapStyleId } from '../../types/domain';
 
@@ -8,6 +9,18 @@ export function MapStylePanel() {
 
   return (
     <>
+      <label>
+        MapTiler API Key{' '}
+        <i className="info" title="La tua chiave gratuita, da cloud.maptiler.com → API Keys">
+          <Info size={10} />
+        </i>
+      </label>
+      <input
+        type="text"
+        value={mapParams.maptilerToken}
+        onChange={(e) => updateMap({ maptilerToken: e.target.value })}
+      />
+
       <label>Stile mappa</label>
       <select value={mapParams.styleId} onChange={(e) => updateMap({ styleId: e.target.value as MapStyleId })}>
         <option value="hybrid-v4">Satellite Hybrid (satellite + strade)</option>

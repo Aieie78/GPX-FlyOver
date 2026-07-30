@@ -1,12 +1,14 @@
 import { useRef } from 'react';
 import type { ChangeEvent, MouseEvent as ReactMouseEvent } from 'react';
+import { Image, Plus, RotateCw, X } from 'lucide-react';
 import { getSessionEngine } from '../../app/flyoverSession';
 import { fmtMinSec } from '../../audio/musicEngine';
 import { buildPhotoClipAtPlayhead } from '../../photos/photoEngine';
 import { snapValue } from '../../timeline/timelineMath';
 import { useProjectStore } from '../../store/useProjectStore';
 import { usePlaybackStore } from '../../store/usePlaybackStore';
-import type { PhotoClip } from '../../types/domain';
+import type { PhotoClip, PhotoRotation } from '../../types/domain';
+import '../layout/transportGrid.css';
 
 type DragMode = 'move' | 'left' | 'right';
 
@@ -66,7 +68,12 @@ export function PhotoLane() {
 
   const handleBlockMouseDown = (e: ReactMouseEvent, clip: PhotoClip) => {
     const target = e.target as HTMLElement;
-    if (target.closest('.lane-block__resize') || target.closest('.lane-block__remove')) return;
+    if (
+      target.closest('.lane-block__resize') ||
+      target.closest('.lane-block__remove') ||
+      target.closest('.lane-block__rotate')
+    )
+      return;
     startDrag(e, clip, 'move');
   };
 
@@ -78,6 +85,11 @@ export function PhotoLane() {
     const rect = e.currentTarget.getBoundingClientRect();
     const frac = (e.clientX - rect.left) / rect.width;
     engine.seekTo(Math.round(frac * (totalFrames - 1)));
+  };
+
+  const handleRotate = (clip: PhotoClip) => {
+    const next = ((clip.rotation + 90) % 360) as PhotoRotation;
+    updatePhotoClip(clip.id, { rotation: next });
   };
 
   const handleAddClick = () => fileInputRef.current?.click();
@@ -99,15 +111,15 @@ export function PhotoLane() {
   const playheadPct = totalDur > 0 ? Math.max(0, Math.min(100, (currentTimeSec / totalDur) * 100)) : 0;
 
   return (
-    <div className="lane-row">
-      <div className="lane-row__label">
-        🖼️ Foto
+    <div className="transport-row">
+      <div className="transport-row__prefix lane-row__label">
+        <Image size={13} /> Foto
         <button type="button" className="lane-add" title="Aggiungi foto al punto attuale della riproduzione" onClick={handleAddClick}>
-          +
+          <Plus size={13} />
         </button>
         <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
       </div>
-      <div className="lane" ref={laneRef} onClick={handleLaneClick}>
+      <div className="transport-row__track lane" ref={laneRef} onClick={handleLaneClick}>
         {photoClips.map((p) => {
           const leftPct = (p.videoStart / totalDur) * 100;
           const widthPct = Math.max(1, Math.min(100 - leftPct, (p.duration / totalDur) * 100));
@@ -121,8 +133,18 @@ export function PhotoLane() {
             >
               <img className="lane-block__thumb" src={p.img.src} alt="" />
               <div className="lane-block__label">{p.name}</div>
+              <div
+                className="lane-block__rotate"
+                title="Ruota di 90°"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRotate(p);
+                }}
+              >
+                <RotateCw size={11} />
+              </div>
               <div className="lane-block__remove" onClick={() => removePhotoClip(p.id)}>
-                ✕
+                <X size={10} />
               </div>
               <div className="lane-block__resize lane-block__resize--left" onMouseDown={(e) => startDrag(e, p, 'left')} />
               <div className="lane-block__resize lane-block__resize--right" onMouseDown={(e) => startDrag(e, p, 'right')} />

@@ -53,23 +53,69 @@
   width: 100%;
   margin-top: 10px;
   padding: 10px;
-  border: none;
+  border: 1px solid transparent;
   border-radius: 6px;
   font-weight: 700;
   cursor: pointer;
   font-size: 13px;
   background: var(--accent);
   color: #141414;
+  transition: filter 0.15s, background-color 0.15s, color 0.15s;
+}
+.sidebar .action-btn:first-child {
+  margin-top: 0;
+}
+.sidebar .action-btn:hover:not(:disabled) {
+  filter: brightness(1.12);
 }
 .sidebar .action-btn:disabled {
-  background: #4a4a4a;
-  color: #999;
+  background: #383c46;
+  border-color: #383c46;
+  color: #7d8492;
   cursor: not-allowed;
 }
-.sidebar .action-btn.secondary {
-  background: transparent;
+.sidebar .record-speed-note {
+  font-size: 11px;
+  color: var(--accent);
+  margin: 8px 0 0;
+}
+
+.sidebar .export-progress {
+  margin-top: 10px;
+}
+.sidebar .export-progress__bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--border);
+  overflow: hidden;
+}
+.sidebar .export-progress__fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.15s ease;
+}
+.sidebar .export-progress__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+.sidebar .export-progress__label {
+  font-size: 11px;
+  color: var(--text);
+}
+.sidebar .export-progress__cancel {
+  padding: 4px 10px;
+  font-size: 11px;
+  border-radius: 6px;
   border: 1px solid var(--border);
+  background: transparent;
   color: var(--text-h);
+  cursor: pointer;
+}
+.sidebar .export-progress__cancel:hover {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
 }
 
 .sidebar .stats-box {
@@ -79,6 +125,21 @@
   border-radius: 6px;
   margin-top: 10px;
   line-height: 1.5;
+}
+.sidebar .stats-warn,
+.sidebar .stats-info,
+.sidebar .stats-tip,
+.sidebar .stats-error {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+.sidebar .stats-warn svg,
+.sidebar .stats-info svg,
+.sidebar .stats-tip svg,
+.sidebar .stats-error svg {
+  flex: 0 0 auto;
+  margin-top: 3px;
 }
 .sidebar .stats-warn {
   color: #e8b400;
@@ -126,7 +187,9 @@
   border-radius: 6px;
 }
 .sidebar .download-link {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   margin-top: 8px;
   color: var(--accent);
   font-size: 12px;
