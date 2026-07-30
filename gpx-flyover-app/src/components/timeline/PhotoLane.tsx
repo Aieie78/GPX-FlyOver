@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import type { ChangeEvent, MouseEvent as ReactMouseEvent } from 'react';
+import type { ChangeEvent, DragEvent as ReactDragEvent, MouseEvent as ReactMouseEvent } from 'react';
 import { Image, Plus, RotateCw, X } from 'lucide-react';
 import { getSessionEngine } from '../../app/flyoverSession';
 import { fmtMinSec } from '../../audio/musicEngine';
@@ -8,6 +8,7 @@ import { assignLaneRows, snapValue } from '../../timeline/timelineMath';
 import { useTimelineRowScroll } from '../../timeline/useTimelineRowScroll';
 import { useProjectStore } from '../../store/useProjectStore';
 import { usePlaybackStore } from '../../store/usePlaybackStore';
+import { useTimelineSelectionStore } from '../../store/useTimelineSelectionStore';
 import type { PhotoClip, PhotoRotation } from '../../types/domain';
 import '../layout/transportGrid.css';
 
@@ -24,8 +25,11 @@ export function PhotoLane() {
   const addPhotoClip = useProjectStore((s) => s.addPhotoClip);
   const photoDefaultDuration = useProjectStore((s) => s.photoDefaultDuration);
   const totalDur = useProjectStore((s) => s.video.durationSec);
+  const snapEnabled = useProjectStore((s) => s.snapEnabled);
   const currentTimeSec = usePlaybackStore((s) => s.currentTimeSec);
   const setStatusMessage = usePlaybackStore((s) => s.setStatusMessage);
+  const selection = useTimelineSelectionStore((s) => s.selection);
+  const selectClip = useTimelineSelectionStore((s) => s.select);
   const { scrollRef, onScroll, onWheel, zoom } = useTimelineRowScroll();
 
   const startDrag = (e: ReactMouseEvent, clip: PhotoClip, mode: DragMode) => {
@@ -35,7 +39,7 @@ export function PhotoLane() {
     const laneRect = laneEl.getBoundingClientRect();
     const startX = e.clientX;
     const orig = { videoStart: clip.videoStart, duration: clip.duration };
-    const snapThreshold = (8 / laneRect.width) * totalDur;
+    const snapThreshold = snapEnabled ? (8 / laneRect.width) * totalDur : 0;
     const snapCandidates = [0, totalDur, usePlaybackStore.getState().currentTimeSec];
     photoClips.forEach((other) => {
       if (other.id === clip.id) return;
@@ -69,6 +73,7 @@ export function PhotoLane() {
   };
 
   const handleBlockMouseDown = (e: ReactMouseEvent, clip: PhotoClip) => {
+    selectClip({ type: 'photo', id: clip.id });
     const target = e.target as HTMLElement;
     if (
       target.closest('.lane-block__resize') ||
@@ -81,6 +86,7 @@ export function PhotoLane() {
 
   const handleLaneClick = (e: ReactMouseEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest('.lane-block')) return;
+    useTimelineSelectionStore.getState().clear();
     const engine = getSessionEngine();
     const totalFrames = usePlaybackStore.getState().totalFrames;
     if (!engine || totalFrames <= 0) return;
@@ -96,18 +102,33 @@ export function PhotoLane() {
 
   const handleAddClick = () => fileInputRef.current?.click();
 
-  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
+  const addFileAt = async (file: File, atSec: number) => {
     try {
-      const playheadSec = usePlaybackStore.getState().currentTimeSec;
-      const clip = await buildPhotoClipAtPlayhead(file, photoDefaultDuration, totalDur, playheadSec);
+      const clip = await buildPhotoClipAtPlayhead(file, photoDefaultDuration, totalDur, atSec);
       addPhotoClip(clip);
     } catch (err) {
       console.error('Errore caricamento immagine', file.name, err);
       setStatusMessage(`Impossibile leggere l'immagine "${file.name}".`);
     }
+  };
+
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    await addFileAt(file, usePlaybackStore.getState().currentTimeSec);
+  };
+
+  // Drag-and-drop di un'immagine direttamente sulla corsia: posizionata nel punto esatto del
+  // rilascio invece che al playhead.
+  const handleDragOver = (e: ReactDragEvent<HTMLDivElement>) => e.preventDefault();
+  const handleDrop = async (e: ReactDragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    await addFileAt(file, frac * totalDur);
   };
 
   const playheadPct = totalDur > 0 ? Math.max(0, Math.min(100, (currentTimeSec / totalDur) * 100)) : 0;
@@ -131,16 +152,19 @@ export function PhotoLane() {
           className="transport-row__track lane"
           ref={laneRef}
           onClick={handleLaneClick}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
           style={{ height: `${rowCount * 40}px`, width: `${zoom * 100}%` }}
         >
           {photoClips.map((p) => {
             const leftPct = (p.videoStart / totalDur) * 100;
             const widthPct = Math.max(1, Math.min(100 - leftPct, (p.duration / totalDur) * 100));
             const row = rowOf.get(p.id) ?? 0;
+            const isSelected = selection?.type === 'photo' && selection.id === p.id;
             return (
               <div
                 key={p.id}
-                className="lane-block lane-block--photo"
+                className={`lane-block lane-block--photo${isSelected ? ' lane-block--selected' : ''}`}
                 style={{ left: `${leftPct}%`, width: `${widthPct}%`, top: `${row * 40 + 3}px` }}
                 title={`${p.name}: ${fmtMinSec(p.videoStart)} → ${fmtMinSec(p.videoStart + p.duration)}`}
                 onMouseDown={(e) => handleBlockMouseDown(e, p)}

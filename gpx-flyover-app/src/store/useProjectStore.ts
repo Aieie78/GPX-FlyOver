@@ -1,5 +1,7 @@
 import { create, useStore } from 'zustand';
 import { temporal, type TemporalState } from 'zundo';
+import { nextMusicId } from '../audio/musicEngine';
+import { nextPhotoId } from '../photos/photoEngine';
 import type {
   CameraParams,
   MapParams,
@@ -24,10 +26,14 @@ interface ProjectActions {
   addMusicTrack: (track: MusicTrack) => void;
   updateMusicTrack: (id: number, patch: Partial<MusicTrack>) => void;
   removeMusicTrack: (id: number) => void;
+  duplicateMusicTrack: (id: number) => void;
+  splitMusicTrackAt: (id: number, atSec: number) => void;
   setPhotoDefaultDuration: (sec: number) => void;
   addPhotoClip: (clip: PhotoClip) => void;
   updatePhotoClip: (id: number, patch: Partial<PhotoClip>) => void;
   removePhotoClip: (id: number) => void;
+  duplicatePhotoClip: (id: number) => void;
+  splitPhotoClipAt: (id: number, atSec: number) => void;
   setSnapEnabled: (enabled: boolean) => void;
 }
 
@@ -81,6 +87,33 @@ export const useProjectStore = create<ProjectStore>()(
         })),
       removeMusicTrack: (id) =>
         set((s) => ({ musicTracks: s.musicTracks.filter((t) => t.id !== id) })),
+      duplicateMusicTrack: (id) =>
+        set((s) => {
+          const t = s.musicTracks.find((x) => x.id === id);
+          if (!t) return {};
+          const length = t.trimEnd - t.trimStart;
+          const videoStart = Math.min(Math.max(0, s.video.durationSec - length), t.videoStart + length);
+          return { musicTracks: [...s.musicTracks, { ...t, id: nextMusicId(), videoStart }] };
+        }),
+      // Taglia un brano nel punto atSec (in secondi video) in due tracce distinte, accorciando
+      // quella esistente e creandone una nuova per la seconda metà — riferiscono lo stesso
+      // AudioBuffer decodificato, cambia solo il ritaglio (trimStart/trimEnd) e la posizione.
+      splitMusicTrackAt: (id, atSec) =>
+        set((s) => {
+          const t = s.musicTracks.find((x) => x.id === id);
+          if (!t) return {};
+          const length = t.trimEnd - t.trimStart;
+          const cutOffset = atSec - t.videoStart;
+          if (cutOffset <= 0.15 || cutOffset >= length - 0.15) return {};
+          const cutTrim = t.trimStart + cutOffset;
+          const second: MusicTrack = { ...t, id: nextMusicId(), videoStart: atSec, trimStart: cutTrim };
+          return {
+            musicTracks: [
+              ...s.musicTracks.map((x) => (x.id === id ? { ...x, trimEnd: cutTrim } : x)),
+              second,
+            ],
+          };
+        }),
       setPhotoDefaultDuration: (photoDefaultDuration) => set({ photoDefaultDuration }),
       addPhotoClip: (clip) => set((s) => ({ photoClips: [...s.photoClips, clip] })),
       updatePhotoClip: (id, patch) =>
@@ -89,6 +122,27 @@ export const useProjectStore = create<ProjectStore>()(
         })),
       removePhotoClip: (id) =>
         set((s) => ({ photoClips: s.photoClips.filter((p) => p.id !== id) })),
+      duplicatePhotoClip: (id) =>
+        set((s) => {
+          const p = s.photoClips.find((x) => x.id === id);
+          if (!p) return {};
+          const videoStart = Math.min(Math.max(0, s.video.durationSec - p.duration), p.videoStart + p.duration);
+          return { photoClips: [...s.photoClips, { ...p, id: nextPhotoId(), videoStart }] };
+        }),
+      splitPhotoClipAt: (id, atSec) =>
+        set((s) => {
+          const p = s.photoClips.find((x) => x.id === id);
+          if (!p) return {};
+          const cutOffset = atSec - p.videoStart;
+          if (cutOffset <= 0.15 || cutOffset >= p.duration - 0.15) return {};
+          const second: PhotoClip = { ...p, id: nextPhotoId(), videoStart: atSec, duration: p.duration - cutOffset };
+          return {
+            photoClips: [
+              ...s.photoClips.map((x) => (x.id === id ? { ...x, duration: cutOffset } : x)),
+              second,
+            ],
+          };
+        }),
       setSnapEnabled: (snapEnabled) => set({ snapEnabled }),
     }),
     {

@@ -1,4 +1,5 @@
 import type { MusicTrack } from '../types/domain';
+import { computeMusicFadeWindows, crossfadeGainAt, effectiveTrackVolume } from './musicMix';
 
 // Contesto audio e nodo di volume condivisi (decodifica + anteprima), come i globali
 // audioCtx/musicGain di gpx-flyover.html:822-836.
@@ -56,6 +57,9 @@ export async function decodeMusicFile(
     trimStart: 0,
     trimEnd: initialTrimEnd,
     videoStart: defaultStart,
+    volume: 1,
+    muted: false,
+    solo: false,
   };
 }
 
@@ -83,6 +87,9 @@ export async function decodeMusicFileAtPlayhead(
     trimStart: 0,
     trimEnd: initialTrimEnd,
     videoStart,
+    volume: 1,
+    muted: false,
+    solo: false,
   };
 }
 
@@ -110,13 +117,19 @@ export function computeActiveTracksAt(musicTracks: MusicTrack[], timeSec: number
   return active;
 }
 
+interface ActivePreviewEntry {
+  source: AudioBufferSourceNode;
+  gain: GainNode;
+  trackId: number;
+}
+
 interface MusicPreviewState {
-  sources: AudioBufferSourceNode[];
+  entries: ActivePreviewEntry[];
   activeKey: string;
   expectedOffsets: Record<number, number>;
 }
 
-let musicPreviewState: MusicPreviewState = { sources: [], activeKey: '', expectedOffsets: {} };
+let musicPreviewState: MusicPreviewState = { entries: [], activeKey: '', expectedOffsets: {} };
 
 // "Orologio" musicale indipendente dalla velocità video: avanza sempre in tempo reale (x1),
 // e viene semplicemente riallineato (non accelerato) quando si fa un salto/seek o si riprende
@@ -125,14 +138,14 @@ let musicAnchorWallTime: number | null = null;
 let musicAnchorVideoTime = 0;
 
 export function stopMusicPreview(): void {
-  musicPreviewState.sources.forEach((s) => {
+  musicPreviewState.entries.forEach(({ source }) => {
     try {
-      s.stop();
+      source.stop();
     } catch {
       /* già fermata */
     }
   });
-  musicPreviewState = { sources: [], activeKey: '', expectedOffsets: {} };
+  musicPreviewState = { entries: [], activeKey: '', expectedOffsets: {} };
 }
 
 export function resetMusicAnchor(videoTimeSec: number): void {
@@ -146,18 +159,22 @@ export function getMusicVirtualTime(): number {
 }
 
 // Chiamata ad ogni frame renderizzato dell'anteprima: fa ripartire le sorgenti solo quando
-// cambia l'insieme di tracce attive o c'è una deriva ampia rispetto all'atteso.
-// Port 1:1 da gpx-flyover.html:1003-1044.
+// cambia l'insieme di tracce attive o c'è una deriva ampia rispetto all'atteso; il volume
+// per-traccia (dissolvenza incrociata inclusa) viene invece aggiornato OGNI chiamata, dato che
+// varia con continuità nel tempo anche quando non serve riavviare nessuna sorgente.
+// Port 1:1 da gpx-flyover.html:1003-1044, esteso con gain per traccia (volume/mute/solo/dissolvenza).
 export function syncMusicPreview(musicTracks: MusicTrack[], playing: boolean): void {
   if (!musicTracks.length) return;
 
   if (!playing) {
-    if (musicPreviewState.sources.length) stopMusicPreview();
+    if (musicPreviewState.entries.length) stopMusicPreview();
     return;
   }
 
   const timeSec = getMusicVirtualTime();
   const active = computeActiveTracksAt(musicTracks, timeSec);
+  const anySolo = musicTracks.some((t) => t.solo);
+  const fadeWindows = computeMusicFadeWindows(musicTracks);
 
   const key = active.map((a) => a.trackIndex).join(',');
   const drift = active.some((a) => {
@@ -165,34 +182,48 @@ export function syncMusicPreview(musicTracks: MusicTrack[], playing: boolean): v
     return expected == null || Math.abs(expected - a.offsetInTrack) > 0.4;
   });
   const needsRestart = key !== musicPreviewState.activeKey || drift;
-  if (!needsRestart) return;
 
-  musicPreviewState.sources.forEach((s) => {
+  if (!needsRestart) {
+    // nessuna sorgente da (ri)avviare: solo aggiornamento continuo dei volumi/dissolvenze
+    musicPreviewState.entries.forEach((entry) => {
+      const track = musicTracks.find((t) => t.id === entry.trackId);
+      const window = track && fadeWindows.get(track.id);
+      const g = track && window ? effectiveTrackVolume(track, anySolo) * crossfadeGainAt(window, timeSec) : 0;
+      entry.gain.gain.value = g;
+    });
+    return;
+  }
+
+  musicPreviewState.entries.forEach(({ source }) => {
     try {
-      s.stop();
+      source.stop();
     } catch {
       /* già fermata */
     }
   });
 
   if (!active.length) {
-    musicPreviewState = { sources: [], activeKey: '', expectedOffsets: {} };
+    musicPreviewState = { entries: [], activeKey: '', expectedOffsets: {} };
     return;
   }
 
   const ctx = ensureAudioCtx(musicGain?.gain.value ?? 0.6);
-  const sources: AudioBufferSourceNode[] = [];
+  const entries: ActivePreviewEntry[] = [];
   const expectedOffsets: Record<number, number> = {};
   active.forEach((a) => {
     const track = musicTracks[a.trackIndex];
+    const window = fadeWindows.get(track.id);
+    const trackGain = ctx.createGain();
+    trackGain.gain.value = window ? effectiveTrackVolume(track, anySolo) * crossfadeGainAt(window, timeSec) : 0;
+    trackGain.connect(musicGain!);
     const source = ctx.createBufferSource();
     source.buffer = track.buffer;
     // playbackRate resta sempre 1: la musica avanza in tempo reale, mai accelerata/rallentata
-    source.connect(musicGain!);
+    source.connect(trackGain);
     source.start(0, a.offsetInTrack, a.remaining);
-    sources.push(source);
+    entries.push({ source, gain: trackGain, trackId: track.id });
     expectedOffsets[a.trackIndex] = a.offsetInTrack;
   });
 
-  musicPreviewState = { sources, activeKey: key, expectedOffsets };
+  musicPreviewState = { entries, activeKey: key, expectedOffsets };
 }

@@ -1,6 +1,7 @@
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { buildAnimParams, cameraForFrame, initialBearing, stepBearing } from '../camera/camera';
 import { ensureAudioCtx } from '../audio/musicEngine';
+import { computeMusicFadeWindows, effectiveTrackVolume, scheduleTrackGainEnvelope } from '../audio/musicMix';
 import { updateRouteDoneUpTo } from '../map/mapSetup';
 import { computePathIndex } from '../timeline/timelineMath';
 import { drawAltitudeLine, drawVehicleIcon, vehicleScreenPos } from '../vehicle/vehicleIcon';
@@ -295,7 +296,10 @@ export async function recordFlight(args: RecordFlightArgs): Promise<Blob> {
   await waitForMapIdle(map);
 
   // --- musica di sottofondo (posizionamento libero per brano, opzionale) ---
-  const hasMusic = scaledMusicTracks.some((t) => t.trimEnd - t.trimStart > 0.05);
+  const anySolo = scaledMusicTracks.some((t) => t.solo);
+  const hasMusic = scaledMusicTracks.some(
+    (t) => t.trimEnd - t.trimStart > 0.05 && effectiveTrackVolume(t, anySolo) > 0,
+  );
   const tracks: MediaStreamTrack[] = [...videoStream.getVideoTracks()];
   const scheduledSources: AudioBufferSourceNode[] = [];
 
@@ -311,16 +315,26 @@ export async function recordFlight(args: RecordFlightArgs): Promise<Blob> {
     // impostate sulla timeline nominale, semplicemente tagliate se cadono oltre la
     // fine del video (più corto se accelerato, più lungo se rallentato).
     const startAt = ctx.currentTime + 0.05; // piccolo margine di sicurezza
+    const fadeWindows = computeMusicFadeWindows(scaledMusicTracks);
     scaledMusicTracks.forEach((track_) => {
       const length = track_.trimEnd - track_.trimStart;
       if (length <= 0.05) return;
       if (track_.videoStart >= effectiveDuration) return; // parte dopo la fine del video: salta
+      const peak = effectiveTrackVolume(track_, anySolo);
+      if (peak <= 0) return; // mutata, o silenziata da un "solo" su un'altra traccia
       const playLen = Math.min(length, effectiveDuration - track_.videoStart);
+      const trackGain = ctx.createGain();
+      trackGain.connect(recGainNode);
       const source = ctx.createBufferSource();
       source.buffer = track_.buffer;
-      source.connect(recGainNode);
+      source.connect(trackGain);
       source.start(startAt + track_.videoStart, track_.trimStart, playLen);
       scheduledSources.push(source);
+
+      // dissolvenza incrociata automatica con brani sovrapposti adiacenti (musicMix.ts)
+      const window = fadeWindows.get(track_.id)!;
+      const actualEnd = Math.min(window.end, track_.videoStart + playLen);
+      scheduleTrackGainEnvelope(trackGain.gain, peak, window, actualEnd, startAt);
     });
 
     // dissolvenza finale (ultimi 2 secondi) per non tagliare la musica di netto

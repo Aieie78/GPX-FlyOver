@@ -84,6 +84,9 @@ export interface MusicTrack {
   trimStart: number;
   trimEnd: number;
   videoStart: number; // posizione di attacco nel video, posizionamento libero
+  volume: number; // 0..1, per singola traccia (moltiplicato per musicVolume globale)
+  muted: boolean;
+  solo: boolean; // se una o più tracce sono in "solo", tutte le altre sono silenziate
 }
 
 export type PhotoRotation = 0 | 90 | 180 | 270;

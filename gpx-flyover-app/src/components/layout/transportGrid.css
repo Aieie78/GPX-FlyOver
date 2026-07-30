@@ -30,6 +30,30 @@
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
+  /* Firefox: spessore + colori coerenti con la palette (thumb viola accent su track scuro) */
+  scrollbar-width: auto;
+  scrollbar-color: var(--accent) var(--border);
+}
+
+/* Scrollbar orizzontale della timeline zoomata: più alta e con più contrasto del sottile grigio
+ * di default del browser, colore coerente con l'accent viola usato altrove (Chrome/Edge/Safari). */
+.transport-row__track-scroll::-webkit-scrollbar {
+  height: 11px;
+}
+.transport-row__track-scroll::-webkit-scrollbar-track {
+  background: var(--border);
+  border-radius: 6px;
+}
+.transport-row__track-scroll::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 6px;
+  border: 2px solid var(--border);
+}
+.transport-row__track-scroll::-webkit-scrollbar-thumb:hover {
+  filter: brightness(1.2);
+}
+.transport-row__track-scroll::-webkit-scrollbar-thumb:active {
+  filter: brightness(0.85);
 }
 
 /* Aspetto condiviso della "traccia" (barra video e corsie musica/foto): stessa altezza,

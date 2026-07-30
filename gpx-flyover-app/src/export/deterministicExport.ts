@@ -1,5 +1,6 @@
 import { AudioBufferSource, BufferTarget, CanvasSource, Output, WebMOutputFormat } from 'mediabunny';
 import { buildAnimParams, cameraForFrame, initialBearing, stepBearing } from '../camera/camera';
+import { computeMusicFadeWindows, effectiveTrackVolume, scheduleTrackGainEnvelope } from '../audio/musicMix';
 import { updateRouteDoneUpTo } from '../map/mapSetup';
 import { computePathIndex } from '../timeline/timelineMath';
 import type { MusicTrack } from '../types/domain';
@@ -42,7 +43,10 @@ export async function renderMusicMixOffline(
   musicVolume: number,
   durationSec: number,
 ): Promise<AudioBuffer | null> {
-  const hasMusic = musicTracks.some((t) => t.trimEnd - t.trimStart > 0.05);
+  const anySolo = musicTracks.some((t) => t.solo);
+  const hasMusic = musicTracks.some(
+    (t) => t.trimEnd - t.trimStart > 0.05 && effectiveTrackVolume(t, anySolo) > 0,
+  );
   if (!hasMusic) return null;
 
   const sampleRate = 48000;
@@ -52,16 +56,26 @@ export async function renderMusicMixOffline(
   gainNode.connect(offlineCtx.destination);
 
   // stesse posizioni della timeline nominale (già riscalate dal chiamante), tagliate se cadono
-  // oltre la fine del video — identico a recordFlight.
+  // oltre la fine del video — identico a recordFlight, con l'aggiunta del gain per traccia
+  // (volume/mute/solo + dissolvenza incrociata automatica tra brani sovrapposti, musicMix.ts).
+  const fadeWindows = computeMusicFadeWindows(musicTracks);
   musicTracks.forEach((track) => {
     const length = track.trimEnd - track.trimStart;
     if (length <= 0.05) return;
     if (track.videoStart >= durationSec) return;
+    const peak = effectiveTrackVolume(track, anySolo);
+    if (peak <= 0) return;
     const playLen = Math.min(length, durationSec - track.videoStart);
+    const trackGain = offlineCtx.createGain();
+    trackGain.connect(gainNode);
     const source = offlineCtx.createBufferSource();
     source.buffer = track.buffer;
-    source.connect(gainNode);
+    source.connect(trackGain);
     source.start(track.videoStart, track.trimStart, playLen);
+
+    const window = fadeWindows.get(track.id)!;
+    const actualEnd = Math.min(window.end, track.videoStart + playLen);
+    scheduleTrackGainEnvelope(trackGain.gain, peak, window, actualEnd, 0);
   });
 
   // dissolvenza finale (ultimi 2 secondi), identica a recordFlight

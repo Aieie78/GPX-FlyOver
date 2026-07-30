@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import type { ChangeEvent, MouseEvent as ReactMouseEvent } from 'react';
+import type { ChangeEvent, DragEvent as ReactDragEvent, MouseEvent as ReactMouseEvent } from 'react';
 import { Music, Plus, X } from 'lucide-react';
 import { getSessionEngine } from '../../app/flyoverSession';
 import { decodeMusicFileAtPlayhead, fmtMinSec } from '../../audio/musicEngine';
@@ -7,7 +7,9 @@ import { assignLaneRows, snapValue } from '../../timeline/timelineMath';
 import { useTimelineRowScroll } from '../../timeline/useTimelineRowScroll';
 import { useProjectStore } from '../../store/useProjectStore';
 import { usePlaybackStore } from '../../store/usePlaybackStore';
+import { useTimelineSelectionStore } from '../../store/useTimelineSelectionStore';
 import type { MusicTrack } from '../../types/domain';
+import { MusicWaveform } from './MusicWaveform';
 import '../layout/transportGrid.css';
 
 type DragMode = 'move' | 'left' | 'right';
@@ -22,8 +24,11 @@ export function MusicLane() {
   const removeMusicTrack = useProjectStore((s) => s.removeMusicTrack);
   const totalDur = useProjectStore((s) => s.video.durationSec);
   const musicVolume = useProjectStore((s) => s.musicVolume);
+  const snapEnabled = useProjectStore((s) => s.snapEnabled);
   const currentTimeSec = usePlaybackStore((s) => s.currentTimeSec);
   const setStatusMessage = usePlaybackStore((s) => s.setStatusMessage);
+  const selection = useTimelineSelectionStore((s) => s.selection);
+  const selectClip = useTimelineSelectionStore((s) => s.select);
   const { scrollRef, onScroll, onWheel, zoom } = useTimelineRowScroll();
 
   const startDrag = (e: ReactMouseEvent, track: MusicTrack, mode: DragMode) => {
@@ -33,7 +38,7 @@ export function MusicLane() {
     const laneRect = laneEl.getBoundingClientRect();
     const startX = e.clientX;
     const orig = { videoStart: track.videoStart, trimStart: track.trimStart, trimEnd: track.trimEnd };
-    const snapThreshold = (8 / laneRect.width) * totalDur; // ~8px di tolleranza
+    const snapThreshold = snapEnabled ? (8 / laneRect.width) * totalDur : 0; // ~8px di tolleranza
     const snapCandidates = [0, totalDur, usePlaybackStore.getState().currentTimeSec];
     musicTracks.forEach((other) => {
       if (other.id === track.id) return;
@@ -84,15 +89,17 @@ export function MusicLane() {
   };
 
   const handleBlockMouseDown = (e: ReactMouseEvent, track: MusicTrack) => {
+    selectClip({ type: 'music', id: track.id });
     const target = e.target as HTMLElement;
     if (target.closest('.lane-block__resize') || target.closest('.lane-block__remove')) return;
     startDrag(e, track, 'move');
   };
 
-  // Click su una corsia (fuori dai blocchi) sposta la riproduzione in quel punto.
+  // Click su una corsia (fuori dai blocchi) sposta la riproduzione in quel punto e deseleziona.
   // Port 1:1 da gpx-flyover.html:657-665.
   const handleLaneClick = (e: ReactMouseEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest('.lane-block')) return;
+    useTimelineSelectionStore.getState().clear();
     const engine = getSessionEngine();
     const totalFrames = usePlaybackStore.getState().totalFrames;
     if (!engine || totalFrames <= 0) return;
@@ -103,18 +110,33 @@ export function MusicLane() {
 
   const handleAddClick = () => fileInputRef.current?.click();
 
-  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
+  const addFileAt = async (file: File, atSec: number) => {
     try {
-      const playheadSec = usePlaybackStore.getState().currentTimeSec;
-      const track = await decodeMusicFileAtPlayhead(file, totalDur, playheadSec, musicVolume);
+      const track = await decodeMusicFileAtPlayhead(file, totalDur, atSec, musicVolume);
       addMusicTrack(track);
     } catch (err) {
       console.error('Errore decodifica audio', file.name, err);
       setStatusMessage(`Impossibile leggere il file audio "${file.name}" — formato non supportato?`);
     }
+  };
+
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    await addFileAt(file, usePlaybackStore.getState().currentTimeSec);
+  };
+
+  // Drag-and-drop di un file audio direttamente sulla corsia: posizionato nel punto esatto del
+  // rilascio invece che al playhead.
+  const handleDragOver = (e: ReactDragEvent<HTMLDivElement>) => e.preventDefault();
+  const handleDrop = async (e: ReactDragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    await addFileAt(file, frac * totalDur);
   };
 
   const playheadPct = totalDur > 0 ? Math.max(0, Math.min(100, (currentTimeSec / totalDur) * 100)) : 0;
@@ -140,6 +162,8 @@ export function MusicLane() {
           className="transport-row__track lane"
           ref={laneRef}
           onClick={handleLaneClick}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
           style={{ height: `${rowCount * 40}px`, width: `${zoom * 100}%` }}
         >
           {musicTracks.map((t) => {
@@ -147,14 +171,16 @@ export function MusicLane() {
             const leftPct = (t.videoStart / totalDur) * 100;
             const widthPct = Math.max(1, Math.min(100 - leftPct, (length / totalDur) * 100));
             const row = rowOf.get(t.id) ?? 0;
+            const isSelected = selection?.type === 'music' && selection.id === t.id;
             return (
               <div
                 key={t.id}
-                className="lane-block lane-block--music"
+                className={`lane-block lane-block--music${isSelected ? ' lane-block--selected' : ''}${t.muted ? ' lane-block--muted' : ''}`}
                 style={{ left: `${leftPct}%`, width: `${widthPct}%`, top: `${row * 40 + 3}px` }}
                 title={`${t.name}: ${fmtMinSec(t.videoStart)} → ${fmtMinSec(t.videoStart + length)}`}
                 onMouseDown={(e) => handleBlockMouseDown(e, t)}
               >
+                <MusicWaveform buffer={t.buffer} trimStart={t.trimStart} trimEnd={t.trimEnd} />
                 <div className="lane-block__label">{t.name}</div>
                 <div className="lane-block__remove" onClick={() => removeMusicTrack(t.id)}>
                   <X size={10} />

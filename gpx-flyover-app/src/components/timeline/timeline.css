@@ -12,8 +12,11 @@
 .timeline-toolbar {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: 4px;
+}
+
+.timeline-toolbar__spacer {
+  flex: 1 1 auto;
 }
 
 .timeline-toolbar__zoom-label {
@@ -42,6 +45,90 @@
 .timeline-toolbar__btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
+}
+.timeline-toolbar__btn--active {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.timeline-inspector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.timeline-inspector__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+.timeline-inspector__volume {
+  width: 90px;
+  flex: 0 0 auto;
+  accent-color: var(--accent);
+}
+
+.timeline-inspector__btn {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-h);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+.timeline-inspector__btn:hover:not(:disabled) {
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+.timeline-inspector__btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.timeline-inspector__btn--active {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.timeline-inspector__btn--solo.timeline-inspector__btn--active {
+  background: #ffcc00;
+  border-color: #ffcc00;
+  color: #141414;
+}
+
+.timeline-inspector__close {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.timeline-inspector__close:hover {
+  color: var(--text-h);
 }
 
 .timeline-ruler {
@@ -132,6 +219,23 @@
 .lane-block--photo {
   border: 2px solid var(--lane-photo);
   background: var(--lane-photo-bg);
+}
+
+.lane-block--selected {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.lane-block--muted {
+  opacity: 0.45;
+}
+
+.lane-block__waveform {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 
 .lane-block__label {
