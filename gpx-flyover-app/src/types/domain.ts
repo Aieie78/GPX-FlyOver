@@ -40,6 +40,7 @@ export interface PathPoint {
   // Velocità reale istantanea (km/h), interpolata dai timestamp <time> originali del GPX tra i
   // due punti grezzi più vicini — null se il GPX non ha dati di tempo validi in quel tratto.
   speedKmh: number | null;
+  headingDeg: number; // rotta 0..360 rispetto al nord, dalla direzione reale del tratto p0→p1
 }
 
 export type VideoResolution = '1280x720' | '1920x1080' | '2560x1440';

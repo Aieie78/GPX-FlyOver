@@ -1,16 +1,5 @@
-import { resamplePath } from '../geo/geo';
+import { bearingBetween, resamplePath } from '../geo/geo';
 import type { AnimParams, CameraParams, FrameCamera, Track, VideoParams } from '../types/domain';
-
-// Port 1:1 da gpx-flyover.html:506
-export function bearingBetween(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const toDeg = (r: number) => (r * 180) / Math.PI;
-  const y = Math.sin(toRad(b.lon - a.lon)) * Math.cos(toRad(b.lat));
-  const x =
-    Math.cos(toRad(a.lat)) * Math.sin(toRad(b.lat)) -
-    Math.sin(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.cos(toRad(b.lon - a.lon));
-  return (toDeg(Math.atan2(y, x)) + 360) % 360;
-}
 
 // Offset verticale in pixel schermo dovuto alla quota, in proporzione al pitch della camera.
 // Port 1:1 da gpx-flyover.html:517.

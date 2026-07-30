@@ -12,6 +12,19 @@ export function haversine(a: { lat: number; lon: number }, b: { lat: number; lon
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
+// Rotta (bearing) da a a b, in gradi 0..360 rispetto al nord. Port 1:1 da gpx-flyover.html:506
+// (spostata qui da camera/camera.ts, che la importa, per poterla riusare anche in resamplePath
+// senza creare un import circolare camera.ts↔geo.ts).
+export function bearingBetween(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const toDeg = (r: number) => (r * 180) / Math.PI;
+  const y = Math.sin(toRad(b.lon - a.lon)) * Math.cos(toRad(b.lat));
+  const x =
+    Math.cos(toRad(a.lat)) * Math.sin(toRad(b.lat)) -
+    Math.sin(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.cos(toRad(b.lon - a.lon));
+  return (toDeg(Math.atan2(y, x)) + 360) % 360;
+}
+
 // Port 1:1 da gpx-flyover.html:390
 export function fmtDuration(sec: number | null): string {
   if (sec == null) return 'n/d';
@@ -47,6 +60,9 @@ export function resamplePath(track: Track, nFrames: number): PathPoint[] {
       const dtSec = (p1.time.getTime() - p0.time.getTime()) / 1000;
       if (dtSec > 0) speedKmh = ((d1 - d0) / dtSec) * 3.6;
     }
+    // Rotta reale del tratto p0→p1 (posizione grezza, non smussata) — indipendente dal bearing
+    // della camera (che usa smoothedLat/Lon a scopo diverso: un movimento fluido dell'inquadratura).
+    const headingDeg = d1 > d0 ? bearingBetween(p0, p1) : 0;
 
     out.push({
       lat: p0.lat + (p1.lat - p0.lat) * t,
@@ -56,6 +72,7 @@ export function resamplePath(track: Track, nFrames: number): PathPoint[] {
       ele: track.smoothedEle[idx - 1] + (track.smoothedEle[idx] - track.smoothedEle[idx - 1]) * t,
       dist: targetDist,
       speedKmh,
+      headingDeg,
     });
   }
   return out;
