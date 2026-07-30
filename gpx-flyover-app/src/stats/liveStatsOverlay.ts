@@ -32,17 +32,17 @@ function formatClockTime(epochMs: number): string {
 // spazio del fotogramma.
 export function drawLiveStatsBox(ctx: CanvasRenderingContext2D, canvasW: number, canvasH: number, cur: PathPoint): void {
   const s = canvasW / 1280;
-  const w = 250 * s;
-  const h = 108 * s;
+  const w = 150 * s;
+  const h = 65 * s;
   const x = canvasW - w - 24 * s;
   const y = canvasH - h - 18 * s;
-  const pad = 12 * s;
+  const pad = 8 * s;
 
   ctx.save();
   ctx.fillStyle = 'rgba(0,0,0,0.55)';
   if (typeof ctx.roundRect === 'function') {
     ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 7 * s);
+    ctx.roundRect(x, y, w, h, 5 * s);
     ctx.fill();
   } else {
     ctx.fillRect(x, y, w, h);
@@ -58,12 +58,12 @@ export function drawLiveStatsBox(ctx: CanvasRenderingContext2D, canvasW: number,
   const lat = formatDMS(cur.lat, 'N', 'S');
   const lon = formatDMS(cur.lon, 'E', 'W');
 
-  ctx.font = `600 ${11 * s}px system-ui`;
+  ctx.font = `600 ${9.5 * s}px system-ui`;
   ctx.fillText(speedLabel, textX, y + lineH * 0.5);
   ctx.fillText(`Rotta: ${Math.round(cur.headingDeg)}° (${compassLabel(cur.headingDeg)})`, textX, y + lineH * 1.5);
   ctx.fillText(`Quota: ${Math.round(cur.ele)} m`, textX, y + lineH * 2.5);
   ctx.fillText(timeLabel, textX, y + lineH * 3.5);
-  ctx.font = `600 ${9.5 * s}px system-ui`;
+  ctx.font = `600 ${8 * s}px system-ui`;
   ctx.fillText(`${lat}  ${lon}`, textX, y + lineH * 4.5);
   ctx.restore();
 }
