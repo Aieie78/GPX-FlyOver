@@ -25,7 +25,7 @@ if (-not (Test-Path 'node_modules')) {
     }
 }
 
-Write-Host "`nAvvio il server di sviluppo: il browser si aprirà automaticamente quando è pronto." -ForegroundColor Cyan
+Write-Host "Avvio il server di sviluppo: il browser si apre automaticamente quando pronto." -ForegroundColor Cyan
 Write-Host "Chiudi questa finestra per fermare il server.`n" -ForegroundColor DarkGray
 
 npm run dev -- --open

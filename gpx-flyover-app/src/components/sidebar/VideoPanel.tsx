@@ -1,5 +1,5 @@
 import { useProjectStore } from '../../store/useProjectStore';
-import type { VideoResolution } from '../../types/domain';
+import type { VideoAspectRatio, VideoResolution } from '../../types/domain';
 
 // Port dei controlli video di gpx-flyover.html:97-123.
 export function VideoPanel() {
@@ -53,8 +53,21 @@ export function VideoPanel() {
             onChange={(e) => updateVideo({ fps: parseInt(e.target.value, 10) || 30 })}
           />
         </div>
-        <div />
+        <div>
+          <label>Formato</label>
+          <select value={video.aspectRatio} onChange={(e) => updateVideo({ aspectRatio: e.target.value as VideoAspectRatio })}>
+            <option value="16:9">16:9 (standard)</option>
+            <option value="9:16">9:16 (storie/reel)</option>
+            <option value="1:1">1:1 (quadrato)</option>
+          </select>
+        </div>
       </div>
+      {video.aspectRatio !== '16:9' && (
+        <p className="field-hint">
+          La scena viene composta come oggi e poi ritagliata al centro nel formato scelto — sui lati verticali si
+          perde parte dell'inquadratura.
+        </p>
+      )}
     </>
   );
 }

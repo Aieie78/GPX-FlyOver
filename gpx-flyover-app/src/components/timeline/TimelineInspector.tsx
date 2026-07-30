@@ -15,11 +15,14 @@ export function TimelineInspector() {
   const clearSelection = useTimelineSelectionStore((s) => s.clear);
   const musicTracks = useProjectStore((s) => s.musicTracks);
   const photoClips = useProjectStore((s) => s.photoClips);
+  const textOverlays = useProjectStore((s) => s.textOverlays);
   const updateMusicTrack = useProjectStore((s) => s.updateMusicTrack);
   const duplicateMusicTrack = useProjectStore((s) => s.duplicateMusicTrack);
   const splitMusicTrackAt = useProjectStore((s) => s.splitMusicTrackAt);
   const duplicatePhotoClip = useProjectStore((s) => s.duplicatePhotoClip);
   const splitPhotoClipAt = useProjectStore((s) => s.splitPhotoClipAt);
+  const updateTextOverlay = useProjectStore((s) => s.updateTextOverlay);
+  const duplicateTextOverlay = useProjectStore((s) => s.duplicateTextOverlay);
   const currentTimeSec = usePlaybackStore((s) => s.currentTimeSec);
 
   if (!selection) return null;
@@ -75,6 +78,34 @@ export function TimelineInspector() {
           className="timeline-inspector__btn"
           title="Duplica"
           onClick={() => duplicateMusicTrack(track.id)}
+        >
+          <Copy size={13} />
+        </button>
+        <button type="button" className="timeline-inspector__close" title="Deseleziona" onClick={clearSelection}>
+          ×
+        </button>
+      </div>
+    );
+  }
+
+  if (selection.type === 'text') {
+    const overlay = textOverlays.find((t) => t.id === selection.id);
+    if (!overlay) return null;
+
+    return (
+      <div className="timeline-inspector">
+        <input
+          type="text"
+          className="timeline-inspector__text-input"
+          value={overlay.text}
+          placeholder="Testo della sovrapposizione..."
+          onChange={(e) => updateTextOverlay(overlay.id, { text: e.target.value })}
+        />
+        <button
+          type="button"
+          className="timeline-inspector__btn"
+          title="Duplica"
+          onClick={() => duplicateTextOverlay(overlay.id)}
         >
           <Copy size={13} />
         </button>

@@ -60,6 +60,10 @@
   font-size: 13px;
   background: var(--accent);
   color: #141414;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   transition: filter 0.15s, background-color 0.15s, color 0.15s;
 }
 .sidebar .action-btn:first-child {

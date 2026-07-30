@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type TimelineSelection = { type: 'music' | 'photo'; id: number } | null;
+export type TimelineSelection = { type: 'music' | 'photo' | 'text'; id: number } | null;
 
 interface TimelineSelectionState {
   selection: TimelineSelection;

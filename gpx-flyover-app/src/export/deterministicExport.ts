@@ -6,9 +6,11 @@ import { computePathIndex } from '../timeline/timelineMath';
 import type { MusicTrack } from '../types/domain';
 import {
   buildProfileBackground,
+  computeAspectCrop,
   drawOverlayFrame,
   scaleMusicTracksForSpeed,
   scalePhotoClipsForSpeed,
+  scaleTextOverlaysForSpeed,
   waitForMapIdle,
   type RecordFlightArgs,
 } from './videoExport';
@@ -91,23 +93,44 @@ export async function recordFlightDeterministic(
   onProgress: (fraction: number) => void,
   isCancelled: () => boolean,
 ): Promise<Blob> {
-  const { map, track, recCanvas, video, camera, vehicle, musicTracks, musicVolume, title, selectedSpeed, photoClips } =
-    args;
-  const recCtx = recCanvas.getContext('2d')!;
+  const {
+    map,
+    track,
+    recCanvas,
+    video,
+    camera,
+    vehicle,
+    musicTracks,
+    musicVolume,
+    title,
+    selectedSpeed,
+    photoClips,
+    textOverlays,
+  } = args;
 
   const baseDuration = video.durationSec;
   const effectiveDuration = baseDuration / selectedSpeed;
   const p = buildAnimParams(track, video, camera, title, effectiveDuration);
   let smoothBearing = initialBearing(p);
 
-  // Stesso riscalamento di recordFlight: le posizioni di musica/foto sono pensate dall'utente
-  // sulla durata nominale, vanno riportate in proporzione alla durata effettiva.
+  // Stesso riscalamento di recordFlight: le posizioni di musica/foto/testo sono pensate
+  // dall'utente sulla durata nominale, vanno riportate in proporzione alla durata effettiva.
   const scaledMusicTracks = scaleMusicTracksForSpeed(musicTracks, selectedSpeed);
   const scaledPhotoClips = scalePhotoClipsForSpeed(photoClips, selectedSpeed);
+  const scaledTextOverlays = scaleTextOverlaysForSpeed(textOverlays, selectedSpeed);
 
+  // Stessa composizione a 16:9 + ritaglio finale al centro di recordFlight (videoExport.ts):
+  // recCanvas (quello che Mediabunny/CanvasSource cattura davvero) ha le dimensioni GIÀ ritagliate,
+  // composeCanvas è la scena intera su cui disegna drawOverlayFrame.
   const [resW, resH] = video.resolution.split('x').map(Number);
-  recCanvas.width = resW;
-  recCanvas.height = resH;
+  const crop = computeAspectCrop(resW, resH, video.aspectRatio);
+  recCanvas.width = crop.outW;
+  recCanvas.height = crop.outH;
+  const recCtx = recCanvas.getContext('2d')!;
+  const composeCanvas = document.createElement('canvas');
+  composeCanvas.width = resW;
+  composeCanvas.height = resH;
+  const composeCtx = composeCanvas.getContext('2d')!;
   const profileBg = buildProfileBackground(track, resW / 1280);
 
   // Stesso pre-caricamento di recordFlight: posiziona la camera sul primo fotogramma e attende
@@ -165,7 +188,7 @@ export async function recordFlightDeterministic(
       // non dal tempo reale impiegato per disegnarli.
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
-      drawOverlayFrame(recCtx, recCanvas, map, track, vehicle, profileBg, {
+      drawOverlayFrame(composeCtx, composeCanvas, map, track, vehicle, profileBg, {
         title: p.title,
         cur: p.path[pathIndex],
         progress: (pathIndex + 1) / p.totalFrames,
@@ -173,7 +196,9 @@ export async function recordFlightDeterministic(
         pitch: p.pitch,
         timeSec: videoTimeSec,
         photoClips: scaledPhotoClips,
+        textOverlays: scaledTextOverlays,
       });
+      recCtx.drawImage(composeCanvas, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, crop.outW, crop.outH);
 
       await videoSource.add(videoTimeSec, 1 / p.fps);
       onProgress((i + 1) / p.totalFrames);

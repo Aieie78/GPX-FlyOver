@@ -49,6 +49,7 @@ export function ActionsPanel({ onLoad }: ActionsPanelProps) {
     try {
       const { video, camera, vehicle, musicTracks, musicVolume, title } = useProjectStore.getState();
       const photoClips = useProjectStore.getState().photoClips;
+      const textOverlays = useProjectStore.getState().textOverlays;
       recCanvas.style.display = 'block';
       const recordArgs = {
         map,
@@ -62,6 +63,7 @@ export function ActionsPanel({ onLoad }: ActionsPanelProps) {
         title,
         selectedSpeed: playbackSpeed,
         photoClips,
+        textOverlays,
       };
 
       let blob: Blob;

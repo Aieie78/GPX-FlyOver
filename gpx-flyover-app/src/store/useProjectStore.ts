@@ -2,6 +2,7 @@ import { create, useStore } from 'zustand';
 import { temporal, type TemporalState } from 'zundo';
 import { nextMusicId } from '../audio/musicEngine';
 import { nextPhotoId } from '../photos/photoEngine';
+import { nextTextId } from '../text/textEngine';
 import type {
   CameraParams,
   MapParams,
@@ -9,6 +10,7 @@ import type {
   PhotoClip,
   ProjectState,
   SegmentMode,
+  TextOverlay,
   Track,
   VehicleParams,
   VideoParams,
@@ -34,7 +36,12 @@ interface ProjectActions {
   removePhotoClip: (id: number) => void;
   duplicatePhotoClip: (id: number) => void;
   splitPhotoClipAt: (id: number, atSec: number) => void;
+  addTextOverlay: (text: string, videoStart: number, duration: number) => number;
+  updateTextOverlay: (id: number, patch: Partial<TextOverlay>) => void;
+  removeTextOverlay: (id: number) => void;
+  duplicateTextOverlay: (id: number) => void;
   setSnapEnabled: (enabled: boolean) => void;
+  loadProjectData: (patch: Partial<Omit<ProjectState, 'track'>>) => void;
 }
 
 type ProjectStore = ProjectState & ProjectActions;
@@ -43,7 +50,7 @@ const initialState: ProjectState = {
   track: null,
   segmentMode: 'longest',
   title: '',
-  video: { resolution: '1920x1080', bitrateMbps: 8, durationSec: 30, fps: 30 },
+  video: { resolution: '1920x1080', bitrateMbps: 8, durationSec: 30, fps: 30, aspectRatio: '16:9' },
   camera: { pitch: 66, zoom: 12.5, orbitAmp: 25, orbitPeriod: 14 },
   map: {
     maptilerToken: 'FyCTckIX29KYsBltxupY',
@@ -62,6 +69,7 @@ const initialState: ProjectState = {
   musicVolume: 0.6,
   photoClips: [],
   photoDefaultDuration: 3,
+  textOverlays: [],
   snapEnabled: true,
 };
 
@@ -143,7 +151,28 @@ export const useProjectStore = create<ProjectStore>()(
             ],
           };
         }),
+      addTextOverlay: (text, videoStart, duration) => {
+        const id = nextTextId();
+        set((s) => ({ textOverlays: [...s.textOverlays, { id, text, videoStart, duration }] }));
+        return id;
+      },
+      updateTextOverlay: (id, patch) =>
+        set((s) => ({
+          textOverlays: s.textOverlays.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+        })),
+      removeTextOverlay: (id) =>
+        set((s) => ({ textOverlays: s.textOverlays.filter((t) => t.id !== id) })),
+      duplicateTextOverlay: (id) =>
+        set((s) => {
+          const t = s.textOverlays.find((x) => x.id === id);
+          if (!t) return {};
+          const videoStart = Math.min(Math.max(0, s.video.durationSec - t.duration), t.videoStart + t.duration);
+          return { textOverlays: [...s.textOverlays, { ...t, id: nextTextId(), videoStart }] };
+        }),
       setSnapEnabled: (snapEnabled) => set({ snapEnabled }),
+      // Applica in blocco i dati di un progetto caricato da JSON (project/projectFile.ts) —
+      // il Track (traccia GPX) resta fuori: va sempre ricaricato a mano, come per l'undo/redo.
+      loadProjectData: (patch) => set(patch),
     }),
     {
       partialize: (state) => {

@@ -6,16 +6,43 @@ import { updateRouteDoneUpTo } from '../map/mapSetup';
 import { computePathIndex } from '../timeline/timelineMath';
 import { drawAltitudeLine, drawVehicleIcon, vehicleScreenPos } from '../vehicle/vehicleIcon';
 import { drawPhotoCover, getActivePhotoLayers } from '../photos/photoEngine';
+import { drawTextOverlay, getActiveTextOverlays } from '../text/textEngine';
 import type {
   CameraParams,
   MusicTrack,
   PathPoint,
   PhotoClip,
   PlaybackSpeed,
+  TextOverlay,
   Track,
   VehicleParams,
+  VideoAspectRatio,
   VideoParams,
 } from '../types/domain';
+
+export interface AspectCrop {
+  outW: number;
+  outH: number;
+  sx: number;
+  sy: number;
+  sw: number;
+  sh: number;
+}
+
+// La scena viene sempre composta in 16:9 (resW x resH, come oggi) e poi ritagliata al centro nel
+// formato scelto — per 16:9 il ritaglio è un no-op (l'intero fotogramma). Per 9:16 si mantiene
+// l'intera altezza e si ritaglia la larghezza; per 1:1 si ritaglia un quadrato pari all'altezza.
+// resH < resW sempre (tutte le risoluzioni disponibili sono 16:9), quindi il ritaglio centrale
+// rientra sempre nella larghezza disponibile.
+export function computeAspectCrop(resW: number, resH: number, aspectRatio: VideoAspectRatio): AspectCrop {
+  if (aspectRatio === '16:9') {
+    return { outW: resW, outH: resH, sx: 0, sy: 0, sw: resW, sh: resH };
+  }
+  const outH = resH;
+  const outW = aspectRatio === '1:1' ? resH : Math.round(((resH * 9) / 16) / 2) * 2;
+  const sx = Math.max(0, Math.round((resW - outW) / 2));
+  return { outW, outH, sx, sy: 0, sw: outW, sh: outH };
+}
 
 // Le posizioni di musica/foto sono impostate dall'utente guardando la durata NOMINALE (il campo
 // "Durata video"); quando si registra a una velocità diversa da x1, la durata EFFETTIVA si
@@ -41,6 +68,16 @@ export function scalePhotoClipsForSpeed(photoClips: PhotoClip[], speed: Playback
     ...p,
     videoStart: p.videoStart / speed,
     duration: p.duration / speed,
+  }));
+}
+
+// Stesso riscalamento di scalePhotoClipsForSpeed, per le sovrapposizioni testuali.
+export function scaleTextOverlaysForSpeed(textOverlays: TextOverlay[], speed: PlaybackSpeed): TextOverlay[] {
+  if (speed === 1) return textOverlays;
+  return textOverlays.map((t) => ({
+    ...t,
+    videoStart: t.videoStart / speed,
+    duration: t.duration / speed,
   }));
 }
 
@@ -163,6 +200,7 @@ interface DrawOverlayArgs {
   pitch: number;
   timeSec: number;
   photoClips: PhotoClip[];
+  textOverlays: TextOverlay[];
 }
 
 // Disegna un fotogramma completo dell'overlay di esportazione (mappa + icona mezzo + titolo +
@@ -176,7 +214,7 @@ export function drawOverlayFrame(
   profileBg: ProfileBackground,
   args: DrawOverlayArgs,
 ): void {
-  const { title, cur, progress, zoom, pitch, timeSec, photoClips } = args;
+  const { title, cur, progress, zoom, pitch, timeSec, photoClips, textOverlays } = args;
   const mapCanvas = map.getCanvas();
   recCtx.drawImage(mapCanvas, 0, 0, recCanvas.width, recCanvas.height);
 
@@ -243,6 +281,12 @@ export function drawOverlayFrame(
   for (const layer of activeLayers) {
     drawPhotoCover(recCtx, layer.photo.img, recCanvas.width, recCanvas.height, layer.alpha, layer.photo.rotation);
   }
+
+  // sovrapposizioni testuali della timeline (didascalie/titoli multipli)
+  const activeTexts = getActiveTextOverlays(textOverlays, timeSec);
+  for (const t of activeTexts) {
+    drawTextOverlay(recCtx, recCanvas.width, recCanvas.height, t.overlay.text, t.alpha);
+  }
 }
 
 export interface RecordFlightArgs {
@@ -257,6 +301,7 @@ export interface RecordFlightArgs {
   title: string;
   selectedSpeed: PlaybackSpeed;
   photoClips: PhotoClip[];
+  textOverlays: TextOverlay[];
 }
 
 // Registrazione lineare, dall'inizio alla fine, per il file video — riproduce il volo in
@@ -265,24 +310,47 @@ export interface RecordFlightArgs {
 // (prompt-refactoring.md, priorità alta #1) — qui si mantiene lo stesso comportamento
 // dell'originale. Port 1:1 da gpx-flyover.html:730-818.
 export async function recordFlight(args: RecordFlightArgs): Promise<Blob> {
-  const { map, track, recCanvas, video, camera, vehicle, musicTracks, musicVolume, title, selectedSpeed, photoClips } =
-    args;
-  const recCtx = recCanvas.getContext('2d')!;
+  const {
+    map,
+    track,
+    recCanvas,
+    video,
+    camera,
+    vehicle,
+    musicTracks,
+    musicVolume,
+    title,
+    selectedSpeed,
+    photoClips,
+    textOverlays,
+  } = args;
 
   const baseDuration = video.durationSec;
   const effectiveDuration = baseDuration / selectedSpeed; // x1.5/x2 = video più corto e più rapido, x0.5 = più lungo e lento
   const p = buildAnimParams(track, video, camera, title, effectiveDuration);
   let smoothBearing = initialBearing(p);
 
-  // Le posizioni di musica/foto sono pensate dall'utente sulla durata NOMINALE — a velocità
+  // Le posizioni di musica/foto/testo sono pensate dall'utente sulla durata NOMINALE — a velocità
   // diversa da x1 vanno riscalate sulla durata EFFETTIVA per restare proporzionalmente corrette
-  // (vedi scaleMusicTracksForSpeed/scalePhotoClipsForSpeed più sopra).
+  // (vedi scaleMusicTracksForSpeed/scalePhotoClipsForSpeed/scaleTextOverlaysForSpeed più sopra).
   const scaledMusicTracks = scaleMusicTracksForSpeed(musicTracks, selectedSpeed);
   const scaledPhotoClips = scalePhotoClipsForSpeed(photoClips, selectedSpeed);
+  const scaledTextOverlays = scaleTextOverlaysForSpeed(textOverlays, selectedSpeed);
 
+  // La scena viene sempre composta in 16:9 (resW x resH) su un canvas separato (composeCanvas),
+  // poi ritagliata al centro nel formato scelto (video.aspectRatio) sul recCanvas vero e proprio,
+  // quello effettivamente catturato da captureStream/MediaRecorder — per 16:9 il ritaglio è un
+  // no-op (l'intero fotogramma), quindi il percorso invariato resta identico a prima.
   const [resW, resH] = video.resolution.split('x').map(Number);
-  recCanvas.width = resW;
-  recCanvas.height = resH;
+  const crop = computeAspectCrop(resW, resH, video.aspectRatio);
+  recCanvas.width = crop.outW;
+  recCanvas.height = crop.outH;
+  const recCtx = recCanvas.getContext('2d')!;
+  const composeCanvas = document.createElement('canvas');
+  composeCanvas.width = resW;
+  composeCanvas.height = resH;
+  const composeCtx = composeCanvas.getContext('2d')!;
+
   const recordedChunks: Blob[] = [];
   const videoStream = recCanvas.captureStream(p.fps);
   const profileBg = buildProfileBackground(track, resW / 1280);
@@ -381,7 +449,7 @@ export async function recordFlight(args: RecordFlightArgs): Promise<Blob> {
     map.jumpTo(cameraForFrame(p, pathIndex, smoothBearing));
     updateRouteDoneUpTo(map, p.path, pathIndex);
     await waitForFrameAndPace(recordingStart + videoTimeSec * 1000);
-    drawOverlayFrame(recCtx, recCanvas, map, track, vehicle, profileBg, {
+    drawOverlayFrame(composeCtx, composeCanvas, map, track, vehicle, profileBg, {
       title: p.title,
       cur: p.path[pathIndex],
       progress: (pathIndex + 1) / p.totalFrames,
@@ -389,7 +457,9 @@ export async function recordFlight(args: RecordFlightArgs): Promise<Blob> {
       pitch: p.pitch,
       timeSec: videoTimeSec,
       photoClips: scaledPhotoClips,
+      textOverlays: scaledTextOverlays,
     });
+    recCtx.drawImage(composeCanvas, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, crop.outW, crop.outH);
   }
 
   await new Promise((r) => setTimeout(r, 300)); // ultimo frame

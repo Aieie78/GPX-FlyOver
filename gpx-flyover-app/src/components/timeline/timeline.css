@@ -73,6 +73,22 @@
   font-weight: 600;
 }
 
+.timeline-inspector__text-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  font-size: 12px;
+}
+.timeline-inspector__text-input:focus {
+  outline: none;
+  border-color: var(--accent-border);
+}
+
 .timeline-inspector__volume {
   width: 90px;
   flex: 0 0 auto;
@@ -133,6 +149,17 @@
 
 .timeline-ruler {
   margin-bottom: 2px;
+}
+
+/* Il righello (14px) non ha spazio verticale per la scrollbar orizzontale senza che questa
+ * copra i numeri dei secondi — nasconderla qui non toglie nulla: scorrere/zoomare da una
+ * qualunque delle altre righe (barra video, musica, foto) tiene comunque il righello allineato,
+ * dato che lo scorrimento è sincronizzato tra tutte le righe (useTimelineRowScroll). */
+.timeline-ruler .transport-row__track-scroll {
+  scrollbar-width: none;
+}
+.timeline-ruler .transport-row__track-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .timeline-ruler__track {
@@ -219,6 +246,10 @@
 .lane-block--photo {
   border: 2px solid var(--lane-photo);
   background: var(--lane-photo-bg);
+}
+
+.lane-block--text {
+  background: linear-gradient(180deg, var(--lane-text), var(--lane-text-strong));
 }
 
 .lane-block--selected {

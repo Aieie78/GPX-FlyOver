@@ -41,12 +41,16 @@ export interface PathPoint {
 
 export type VideoResolution = '1280x720' | '1920x1080' | '2560x1440';
 export type PlaybackSpeed = 0.5 | 1 | 1.5 | 2;
+// Formato di esportazione: la scena viene sempre composta in 16:9 (come oggi) e poi, per i
+// formati social, ritagliata al centro nel formato scelto — nessuna reinquadratura dedicata.
+export type VideoAspectRatio = '16:9' | '9:16' | '1:1';
 
 export interface VideoParams {
   resolution: VideoResolution;
   bitrateMbps: number;
   durationSec: number;
   fps: number;
+  aspectRatio: VideoAspectRatio;
 }
 
 export interface CameraParams {
@@ -87,6 +91,16 @@ export interface MusicTrack {
   volume: number; // 0..1, per singola traccia (moltiplicato per musicVolume globale)
   muted: boolean;
   solo: boolean; // se una o più tracce sono in "solo", tutte le altre sono silenziate
+}
+
+// Sovrapposizione testuale posizionabile sulla timeline (didascalie/titoli multipli) — distinta
+// dal campo "title" (sempre visibile, in alto a sinistra): queste appaiono/scompaiono con una
+// breve dissolvenza solo nella loro finestra temporale, come le foto.
+export interface TextOverlay {
+  id: number;
+  text: string;
+  videoStart: number;
+  duration: number;
 }
 
 export type PhotoRotation = 0 | 90 | 180 | 270;
@@ -134,5 +148,6 @@ export interface ProjectState {
   musicVolume: number; // 0..1, globale
   photoClips: PhotoClip[];
   photoDefaultDuration: number;
+  textOverlays: TextOverlay[];
   snapEnabled: boolean;
 }

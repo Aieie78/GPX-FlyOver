@@ -88,6 +88,7 @@ export function MapCanvas() {
             getTitle: () => useProjectStore.getState().title,
             getMusicTracks: () => useProjectStore.getState().musicTracks,
             getPhotoClips: () => useProjectStore.getState().photoClips,
+            getTextOverlays: () => useProjectStore.getState().textOverlays,
             onTick: (info) => usePlaybackStore.getState().setTick(info),
             onEnded: () => usePlaybackStore.getState().setIsPlaying(false),
           });

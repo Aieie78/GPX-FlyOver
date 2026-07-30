@@ -1,12 +1,31 @@
+import { CAMERA_PRESETS } from '../../camera/cameraPresets';
 import { useProjectStore } from '../../store/useProjectStore';
 
-// Port dei controlli camera di gpx-flyover.html:125-145.
+// Port dei controlli camera di gpx-flyover.html:125-145, con l'aggiunta di preset pronti
+// (CAMERA_PRESETS) per partire da un'inquadratura sensata senza tarare i 4 parametri a mano.
 export function CameraPanel() {
   const camera = useProjectStore((s) => s.camera);
   const updateCamera = useProjectStore((s) => s.updateCamera);
 
   return (
     <>
+      <label>Preset</label>
+      <select
+        value=""
+        onChange={(e) => {
+          const preset = CAMERA_PRESETS.find((p) => p.name === e.target.value);
+          if (preset) updateCamera(preset.params);
+        }}
+      >
+        <option value="" disabled>
+          Scegli un preset...
+        </option>
+        {CAMERA_PRESETS.map((p) => (
+          <option key={p.name} value={p.name}>
+            {p.name}
+          </option>
+        ))}
+      </select>
       <div className="row">
         <div>
           <label>Pitch (°)</label>

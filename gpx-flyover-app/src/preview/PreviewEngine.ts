@@ -5,12 +5,14 @@ import { updateRouteDoneUpTo } from '../map/mapSetup';
 import { computePathIndex } from '../timeline/timelineMath';
 import { drawAltitudeLine, drawVehicleIcon, vehicleScreenPos } from '../vehicle/vehicleIcon';
 import { drawPhotoCover, getActivePhotoLayers } from '../photos/photoEngine';
+import { drawTextOverlay, getActiveTextOverlays } from '../text/textEngine';
 import type {
   AnimParams,
   CameraParams,
   MusicTrack,
   PhotoClip,
   PlaybackSpeed,
+  TextOverlay,
   Track,
   VehicleParams,
   VideoParams,
@@ -35,6 +37,7 @@ export interface PreviewEngineDeps {
   getTitle: () => string;
   getMusicTracks: () => MusicTrack[];
   getPhotoClips: () => PhotoClip[];
+  getTextOverlays: () => TextOverlay[];
   onTick: (info: PreviewTickInfo) => void;
   onEnded: () => void;
 }
@@ -255,6 +258,11 @@ export class PreviewEngine {
         layer.alpha,
         layer.photo.rotation,
       );
+    }
+
+    const activeTexts = getActiveTextOverlays(this.deps.getTextOverlays(), i / s.fps);
+    for (const t of activeTexts) {
+      drawTextOverlay(this.overlayCtx, overlayCanvas.width, overlayCanvas.height, t.overlay.text, t.alpha);
     }
 
     this.deps.onTick({

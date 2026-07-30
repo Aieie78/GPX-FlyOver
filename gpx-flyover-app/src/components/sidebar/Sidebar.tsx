@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Camera, Car, FileUp, Map, Music, Video } from 'lucide-react';
+import { Camera, Car, FileUp, FolderOpen, Map, Music, Video } from 'lucide-react';
 import { parseGpx } from '../../gpx/parseGpx';
 import { useProjectStore } from '../../store/useProjectStore';
 import { usePlaybackStore } from '../../store/usePlaybackStore';
@@ -11,6 +11,7 @@ import { CameraPanel } from './CameraPanel';
 import { MapStylePanel } from './MapStylePanel';
 import { VehiclePanel } from './VehiclePanel';
 import { MusicPhotosPanel } from './MusicPhotosPanel';
+import { ProjectPanel } from './ProjectPanel';
 import { ActionsPanel } from './ActionsPanel';
 import { SidebarFooter } from './SidebarFooter';
 import './sidebar.css';
@@ -92,6 +93,9 @@ export function Sidebar({ collapsed }: SidebarProps) {
         </SidebarSection>
         <SidebarSection title="Musica & Foto" icon={Music}>
           <MusicPhotosPanel />
+        </SidebarSection>
+        <SidebarSection title="Progetto" icon={FolderOpen}>
+          <ProjectPanel />
         </SidebarSection>
       </div>
       <SidebarFooter />

@@ -1,5 +1,8 @@
+import { useState } from 'react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import { Pause, Play, SkipBack, SkipForward } from 'lucide-react';
 import { getSessionEngine } from '../../app/flyoverSession';
+import { fmtMinSec } from '../../audio/musicEngine';
 import { useProjectStore } from '../../store/useProjectStore';
 import { usePlaybackStore } from '../../store/usePlaybackStore';
 import { useTimelineRowScroll } from '../../timeline/useTimelineRowScroll';
@@ -24,6 +27,7 @@ export function PreviewControls() {
   const totalTimeSec = usePlaybackStore((s) => s.totalTimeSec);
   const totalDur = useProjectStore((s) => s.video.durationSec);
   const { scrollRef, onScroll, onWheel, zoom } = useTimelineRowScroll();
+  const [hover, setHover] = useState<{ pct: number; timeSec: number } | null>(null);
 
   const started = totalFrames > 0;
   // Stessa base di calcolo (currentTimeSec / durata video configurata) usata da MusicLane e
@@ -46,6 +50,17 @@ export function PreviewControls() {
     getSessionEngine()?.seekTo(value);
   };
 
+  // Anteprima: solo l'orario nel punto sotto il cursore (nessuna vera miniatura, che
+  // richiederebbe di spostare momentaneamente la mappa 3D live e farla "lampeggiare" durante lo
+  // scrubbing — scelta esplicita per non rischiare di disturbare la mappa vera).
+  const handleTrackMouseMove = (e: ReactMouseEvent<HTMLDivElement>) => {
+    if (!started) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    setHover({ pct: pct * 100, timeSec: pct * totalTimeSec });
+  };
+  const handleTrackMouseLeave = () => setHover(null);
+
   return (
     <div className="transport-row preview-controls">
       <div className="transport-row__prefix">
@@ -67,7 +82,12 @@ export function PreviewControls() {
       </div>
 
       <div className="transport-row__track-scroll" ref={scrollRef} onScroll={onScroll} onWheel={onWheel}>
-        <div className="transport-row__track lane" style={{ width: `${zoom * 100}%` }}>
+        <div
+          className="transport-row__track lane"
+          style={{ width: `${zoom * 100}%` }}
+          onMouseMove={handleTrackMouseMove}
+          onMouseLeave={handleTrackMouseLeave}
+        >
           <input
             type="range"
             className="transport-seek-input"
@@ -78,6 +98,11 @@ export function PreviewControls() {
             onChange={(e) => handleSeekBarChange(Number(e.target.value))}
           />
           <div className="lane-playhead" style={{ left: `${playheadPct}%` }} />
+          {hover && (
+            <div className="preview-controls__hover-tooltip" style={{ left: `${hover.pct}%` }}>
+              {fmtMinSec(hover.timeSec)}
+            </div>
+          )}
         </div>
       </div>
 
