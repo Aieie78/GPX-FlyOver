@@ -168,11 +168,24 @@
   height: 18px;
 }
 
+/* Contenitore a tutta altezza (come prima di questo fix): il numero (figlio, top:0) resta
+ * posizionato in alto rispetto a QUESTO elemento — spostare in basso solo il contenitore (invece
+ * che la sola linea visibile) trascinava giù anche il numero, tagliandolo fuori dal viewport
+ * (overflow:hidden) e facendolo sparire del tutto. La riga della tacca è ora un elemento
+ * separato (::after) ancorato in basso, indipendente dalla posizione del numero. */
 .timeline-ruler__tick {
   position: absolute;
-  top: 10px;
+  top: 0;
   bottom: 0;
   width: 1px;
+}
+.timeline-ruler__tick::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  height: 8px;
   background: var(--border);
 }
 
