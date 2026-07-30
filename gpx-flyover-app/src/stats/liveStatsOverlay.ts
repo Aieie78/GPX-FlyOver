@@ -17,40 +17,52 @@ function formatDMS(value: number, positiveLabel: string, negativeLabel: string):
   return `${d}°${m}'${sec.toFixed(1)}"${dir}`;
 }
 
-// Riquadro in basso a destra con velocità/rotta/quota/posizione (DMS) in tempo reale, disegnato
-// sia in anteprima (PreviewEngine.ts) sia nel video esportato (drawOverlayFrame, videoExport.ts)
-// — attivabile dalla checkbox "Dati in tempo reale" nel pannello Mezzo. Posizionato a destra per
-// non sovrapporsi alla barra statistiche/avanzamento esistente, in basso a sinistra.
+// Solo l'ora (UTC, dal timestamp <time> originale del GPX) — mai la data.
+function formatClockTime(epochMs: number): string {
+  const d = new Date(epochMs);
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
+}
+
+// Riquadro in basso a destra con velocità/rotta/quota/ora/posizione (DMS) in tempo reale,
+// disegnato sia in anteprima (PreviewEngine.ts) sia nel video esportato (drawOverlayFrame,
+// videoExport.ts) — attivabile dalla checkbox "Dati in tempo reale" nel pannello Mezzo.
+// Posizionato a destra per non sovrapporsi alla barra statistiche/avanzamento esistente, a
+// sinistra. Compatto (5 righe, carattere piccolo) per restare leggibile senza occupare troppo
+// spazio del fotogramma.
 export function drawLiveStatsBox(ctx: CanvasRenderingContext2D, canvasW: number, canvasH: number, cur: PathPoint): void {
   const s = canvasW / 1280;
-  const w = 280 * s;
-  const h = 112 * s;
-  const x = canvasW - w - 30 * s;
-  const y = canvasH - h - 20 * s;
-  const pad = 14 * s;
+  const w = 250 * s;
+  const h = 108 * s;
+  const x = canvasW - w - 24 * s;
+  const y = canvasH - h - 18 * s;
+  const pad = 12 * s;
 
   ctx.save();
   ctx.fillStyle = 'rgba(0,0,0,0.55)';
   if (typeof ctx.roundRect === 'function') {
     ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 8 * s);
+    ctx.roundRect(x, y, w, h, 7 * s);
     ctx.fill();
   } else {
     ctx.fillRect(x, y, w, h);
   }
 
   ctx.fillStyle = '#fff';
-  ctx.font = `600 ${13 * s}px system-ui`;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  const lineH = h / 4;
+  const lineH = h / 5;
   const speedLabel = cur.speedKmh != null ? `Velocità: ${Math.round(cur.speedKmh)} km/h` : 'Velocità: n/d';
+  const timeLabel = cur.clockTimeMs != null ? `Ora: ${formatClockTime(cur.clockTimeMs)}` : 'Ora: n/d';
   const lat = formatDMS(cur.lat, 'N', 'S');
   const lon = formatDMS(cur.lon, 'E', 'W');
+
+  ctx.font = `600 ${11 * s}px system-ui`;
   ctx.fillText(speedLabel, x + pad, y + lineH * 0.5);
   ctx.fillText(`Rotta: ${Math.round(cur.headingDeg)}° (${compassLabel(cur.headingDeg)})`, x + pad, y + lineH * 1.5);
   ctx.fillText(`Quota: ${Math.round(cur.ele)} m`, x + pad, y + lineH * 2.5);
-  ctx.font = `600 ${11.5 * s}px system-ui`;
-  ctx.fillText(`${lat}  ${lon}`, x + pad, y + lineH * 3.5);
+  ctx.fillText(timeLabel, x + pad, y + lineH * 3.5);
+  ctx.font = `600 ${9.5 * s}px system-ui`;
+  ctx.fillText(`${lat}  ${lon}`, x + pad, y + lineH * 4.5);
   ctx.restore();
 }

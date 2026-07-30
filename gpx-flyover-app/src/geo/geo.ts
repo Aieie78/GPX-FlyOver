@@ -63,6 +63,7 @@ export function resamplePath(track: Track, nFrames: number): PathPoint[] {
     // Rotta reale del tratto p0→p1 (posizione grezza, non smussata) — indipendente dal bearing
     // della camera (che usa smoothedLat/Lon a scopo diverso: un movimento fluido dell'inquadratura).
     const headingDeg = d1 > d0 ? bearingBetween(p0, p1) : 0;
+    const clockTimeMs = p0.time && p1.time ? p0.time.getTime() + (p1.time.getTime() - p0.time.getTime()) * t : null;
 
     out.push({
       lat: p0.lat + (p1.lat - p0.lat) * t,
@@ -73,6 +74,7 @@ export function resamplePath(track: Track, nFrames: number): PathPoint[] {
       dist: targetDist,
       speedKmh,
       headingDeg,
+      clockTimeMs,
     });
   }
   return out;
