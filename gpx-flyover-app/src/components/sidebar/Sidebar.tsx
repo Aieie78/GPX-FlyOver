@@ -56,7 +56,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
       setSuggestedDurationSec(Math.round(parsed.totalDist / 1000 / kmps));
       setLoadedSegmentMode(segmentMode);
       setLoadedFileName(file.name);
-      setTrack(parsed);
+      setTrack(file.name, parsed);
     } catch (err) {
       console.error(err);
       setLoadError(err instanceof Error ? err.message : 'Errore durante il parsing del GPX');

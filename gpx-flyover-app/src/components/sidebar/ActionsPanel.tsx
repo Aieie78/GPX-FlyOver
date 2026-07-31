@@ -3,7 +3,7 @@ import { Download } from 'lucide-react';
 import { getSessionEngine, getSessionMap, getSessionRecCanvas } from '../../app/flyoverSession';
 import { ExportCancelledError, isDeterministicExportSupported, recordFlightDeterministic } from '../../export/deterministicExport';
 import { recordFlight } from '../../export/videoExport';
-import { useProjectStore } from '../../store/useProjectStore';
+import { getPrimaryTrack, useProjectStore } from '../../store/useProjectStore';
 import { usePlaybackStore } from '../../store/usePlaybackStore';
 
 interface ActionsPanelProps {
@@ -42,24 +42,24 @@ export function ActionsPanel({ onLoad }: ActionsPanelProps) {
   const handleRecord = async () => {
     const map = getSessionMap();
     const recCanvas = getSessionRecCanvas();
-    const track = useProjectStore.getState().track;
-    if (!map || !recCanvas || !track) return;
+    const primary = getPrimaryTrack(useProjectStore.getState());
+    if (!map || !recCanvas || !primary) return;
 
     getSessionEngine()?.stop();
     setIsRecording(true);
     setExportProgress(0);
     try {
-      const { video, camera, vehicle, musicTracks, musicVolume, title } = useProjectStore.getState();
+      const { video, camera, musicTracks, musicVolume, title } = useProjectStore.getState();
       const photoClips = useProjectStore.getState().photoClips;
       const textOverlays = useProjectStore.getState().textOverlays;
       recCanvas.style.display = 'block';
       const recordArgs = {
         map,
-        track,
+        track: primary.track,
         recCanvas,
         video,
         camera,
-        vehicle,
+        vehicle: primary.vehicle,
         musicTracks,
         musicVolume,
         title,

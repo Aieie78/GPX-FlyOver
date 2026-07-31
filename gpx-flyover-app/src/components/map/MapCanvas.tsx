@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { setSessionEngine, setSessionMap, setSessionRecCanvas } from '../../app/flyoverSession';
 import { setupRouteLayers, styleUrlFor } from '../../map/mapSetup';
 import { PreviewEngine } from '../../preview/PreviewEngine';
-import { useProjectStore } from '../../store/useProjectStore';
+import { getPrimaryTrack, useProjectStore } from '../../store/useProjectStore';
 import { usePlaybackStore } from '../../store/usePlaybackStore';
 import { TextOverlayHandle } from './TextOverlayHandle';
 import './mapCanvas.css';
@@ -17,7 +17,7 @@ export function MapCanvas() {
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const recCanvasRef = useRef<HTMLCanvasElement>(null);
   const mapInstanceRef = useRef<MapLibreMap | null>(null);
-  const track = useProjectStore((s) => s.track);
+  const track = useProjectStore((s) => getPrimaryTrack(s)?.track ?? null);
 
   useEffect(() => {
     setSessionRecCanvas(recCanvasRef.current);
@@ -65,7 +65,7 @@ export function MapCanvas() {
     // sicuro contro questa race condition: eseguire subito se già pronta, altrimenti attendere
     // l'evento una tantum.
     const onStyleReady = () => {
-      const currentTrack = useProjectStore.getState().track;
+      const currentTrack = getPrimaryTrack(useProjectStore.getState())?.track;
       if (!currentTrack) return;
       try {
         setupRouteLayers(map, currentTrack, mapParams.maptilerToken);
@@ -82,10 +82,10 @@ export function MapCanvas() {
           const engine = new PreviewEngine({
             map,
             overlayCanvas: overlayRef.current,
-            getTrack: () => useProjectStore.getState().track!,
+            getTrack: () => getPrimaryTrack(useProjectStore.getState())!.track,
             getVideoParams: () => useProjectStore.getState().video,
             getCameraParams: () => useProjectStore.getState().camera,
-            getVehicleParams: () => useProjectStore.getState().vehicle,
+            getVehicleParams: () => getPrimaryTrack(useProjectStore.getState())!.vehicle,
             getTitle: () => useProjectStore.getState().title,
             getMusicTracks: () => useProjectStore.getState().musicTracks,
             getPhotoClips: () => useProjectStore.getState().photoClips,

@@ -1,6 +1,6 @@
 import { AlertTriangle, Info, Lightbulb } from 'lucide-react';
 import { fmtDuration } from '../../geo/geo';
-import { useProjectStore } from '../../store/useProjectStore';
+import { getPrimaryTrack, useProjectStore } from '../../store/useProjectStore';
 import type { SegmentMode } from '../../types/domain';
 
 interface GpxSourcePanelProps {
@@ -30,7 +30,7 @@ export function GpxSourcePanel({
 }: GpxSourcePanelProps) {
   const segmentMode = useProjectStore((s) => s.segmentMode);
   const setSegmentMode = useProjectStore((s) => s.setSegmentMode);
-  const track = useProjectStore((s) => s.track);
+  const track = useProjectStore((s) => getPrimaryTrack(s)?.track ?? null);
   const title = useProjectStore((s) => s.title);
   const setTitle = useProjectStore((s) => s.setTitle);
 

@@ -32,8 +32,9 @@ export function ProjectPanel() {
     if (!file) return;
     try {
       const json = JSON.parse(await file.text());
-      const { data, skippedMusicNames } = await deserializeProject(json);
+      const { data, vehicle, skippedMusicNames } = await deserializeProject(json);
       useProjectStore.getState().loadProjectData(data);
+      useProjectStore.getState().updateVehicle(vehicle);
       const musicNote = skippedMusicNames.length
         ? ` Brani musicali da riaggiungere manualmente (audio non incluso nel salvataggio): ${skippedMusicNames.join(', ')}.`
         : '';

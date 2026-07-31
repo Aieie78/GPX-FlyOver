@@ -3,6 +3,7 @@ import { temporal, type TemporalState } from 'zundo';
 import { nextMusicId } from '../audio/musicEngine';
 import { nextPhotoId } from '../photos/photoEngine';
 import { nextTextId } from '../text/textEngine';
+import { nextTrackId } from '../gpx/parseGpx';
 import type {
   CameraParams,
   MapParams,
@@ -13,11 +14,26 @@ import type {
   TextOverlay,
   Track,
   VehicleParams,
+  VehicleTrack,
   VideoParams,
 } from '../types/domain';
 
+// Traccia principale del progetto — esattamente come oggi solo una guida camera/statistiche/
+// percorso giallo. In Fase 5.1 esiste sempre al più una traccia (quella caricata), sempre
+// marcata principale: la gestione multi-traccia vera e propria (aggiungi/rimuovi/designa) arriva
+// nelle fasi successive (5.2+).
+export function getPrimaryTrack(state: ProjectState): VehicleTrack | undefined {
+  return state.tracks.find((t) => t.isPrimary);
+}
+
+// Impostazioni Mezzo "effettive" mostrate nel pannello: quelle della traccia principale se
+// esiste, altrimenti i default in pendingVehicle (nessuna traccia ancora caricata).
+export function getEffectiveVehicle(state: ProjectState): VehicleParams {
+  return getPrimaryTrack(state)?.vehicle ?? state.pendingVehicle;
+}
+
 interface ProjectActions {
-  setTrack: (track: Track | null) => void;
+  setTrack: (fileName: string, track: Track) => void;
   setSegmentMode: (mode: SegmentMode) => void;
   setTitle: (title: string) => void;
   updateVideo: (patch: Partial<VideoParams>) => void;
@@ -41,13 +57,24 @@ interface ProjectActions {
   removeTextOverlay: (id: number) => void;
   duplicateTextOverlay: (id: number) => void;
   setSnapEnabled: (enabled: boolean) => void;
-  loadProjectData: (patch: Partial<Omit<ProjectState, 'track'>>) => void;
+  loadProjectData: (patch: Partial<Omit<ProjectState, 'tracks'>>) => void;
 }
 
 type ProjectStore = ProjectState & ProjectActions;
 
+const defaultVehicle: VehicleParams = {
+  icon: '🏍️',
+  color: '#00e5ff',
+  iconStyle: 'filled',
+  size: 0.55,
+  use3DAltitude: false,
+  altExaggeration: 8,
+  showLiveStats: false,
+};
+
 const initialState: ProjectState = {
-  track: null,
+  tracks: [],
+  pendingVehicle: defaultVehicle,
   segmentMode: 'longest',
   title: '',
   video: {
@@ -66,15 +93,6 @@ const initialState: ProjectState = {
     styleId: 'hybrid-v4',
     customStyleUrl: 'https://api.maptiler.com/maps/019fad3d-3469-7200-b415-d66035b09fd7/style.json?key=FyCTckIX29KYsBltxupY',
   },
-  vehicle: {
-    icon: '🏍️',
-    color: '#00e5ff',
-    iconStyle: 'filled',
-    size: 0.55,
-    use3DAltitude: false,
-    altExaggeration: 8,
-    showLiveStats: false,
-  },
   musicTracks: [],
   musicVolume: 0.6,
   photoClips: [],
@@ -90,13 +108,36 @@ export const useProjectStore = create<ProjectStore>()(
   temporal(
     (set) => ({
       ...initialState,
-      setTrack: (track) => set({ track }),
+      // Sostituisce la traccia principale (unica, in questa fase): se ne esiste già una, ne
+      // aggiorna solo file/dati GPX mantenendo le impostazioni Mezzo già configurate (come oggi);
+      // altrimenti ne crea una nuova, inizializzata dai default in pendingVehicle.
+      setTrack: (fileName, track) =>
+        set((s) => {
+          const existing = getPrimaryTrack(s);
+          if (existing) {
+            return {
+              tracks: s.tracks.map((t) => (t.id === existing.id ? { ...t, fileName, track } : t)),
+            };
+          }
+          return {
+            tracks: [{ id: nextTrackId(), fileName, track, vehicle: { ...s.pendingVehicle }, isPrimary: true }],
+          };
+        }),
       setSegmentMode: (segmentMode) => set({ segmentMode }),
       setTitle: (title) => set({ title }),
       updateVideo: (patch) => set((s) => ({ video: { ...s.video, ...patch } })),
       updateCamera: (patch) => set((s) => ({ camera: { ...s.camera, ...patch } })),
       updateMap: (patch) => set((s) => ({ map: { ...s.map, ...patch } })),
-      updateVehicle: (patch) => set((s) => ({ vehicle: { ...s.vehicle, ...patch } })),
+      // Prima che una traccia sia caricata modifica i default (pendingVehicle); una volta
+      // caricata una traccia principale, modifica le sue impostazioni Mezzo.
+      updateVehicle: (patch) =>
+        set((s) => {
+          const primary = getPrimaryTrack(s);
+          if (!primary) return { pendingVehicle: { ...s.pendingVehicle, ...patch } };
+          return {
+            tracks: s.tracks.map((t) => (t.id === primary.id ? { ...t, vehicle: { ...t.vehicle, ...patch } } : t)),
+          };
+        }),
       setMusicVolume: (musicVolume) => set({ musicVolume }),
       addMusicTrack: (track) => set((s) => ({ musicTracks: [...s.musicTracks, track] })),
       updateMusicTrack: (id, patch) =>
@@ -181,12 +222,12 @@ export const useProjectStore = create<ProjectStore>()(
         }),
       setSnapEnabled: (snapEnabled) => set({ snapEnabled }),
       // Applica in blocco i dati di un progetto caricato da JSON (project/projectFile.ts) —
-      // il Track (traccia GPX) resta fuori: va sempre ricaricato a mano, come per l'undo/redo.
+      // le tracce GPX restano fuori: vanno sempre ricaricate a mano, come per l'undo/redo.
       loadProjectData: (patch) => set(patch),
     }),
     {
       partialize: (state) => {
-        const { track: _track, ...rest } = state;
+        const { tracks: _tracks, ...rest } = state;
         return rest;
       },
       limit: 100,
@@ -195,7 +236,7 @@ export const useProjectStore = create<ProjectStore>()(
 );
 
 export function useProjectTemporalStore<T>(
-  selector: (state: TemporalState<Omit<ProjectStore, 'track'>>) => T,
+  selector: (state: TemporalState<Omit<ProjectStore, 'tracks'>>) => T,
 ): T {
   return useStore(useProjectStore.temporal, selector);
 }

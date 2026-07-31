@@ -1,5 +1,5 @@
 import { setMusicGainVolume } from '../audio/musicEngine';
-import { useProjectStore } from '../store/useProjectStore';
+import { getPrimaryTrack, useProjectStore } from '../store/useProjectStore';
 import { getSessionEngine } from './flyoverSession';
 
 // Aggiornamento live dei parametri durante l'anteprima aperta, come i due blocchi
@@ -11,7 +11,7 @@ export function startLiveParamsSync(): () => void {
     if (state.camera !== prev.camera || state.video !== prev.video) {
       getSessionEngine()?.onParamsChanged();
     }
-    if (state.vehicle !== prev.vehicle) {
+    if (getPrimaryTrack(state)?.vehicle !== getPrimaryTrack(prev)?.vehicle) {
       getSessionEngine()?.rerenderCurrentFrame();
     }
     if (state.musicVolume !== prev.musicVolume) {

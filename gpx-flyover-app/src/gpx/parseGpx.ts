@@ -1,6 +1,11 @@
 import { haversine } from '../geo/geo';
 import type { SegmentMode, Track, TrackPoint } from '../types/domain';
 
+let trackIdSeq = 0;
+export function nextTrackId(): number {
+  return trackIdSeq++;
+}
+
 // Port 1:1 da gpx-flyover.html:268-379.
 export function parseGpx(xmlText: string, segmentMode: SegmentMode): Track {
   const xml = new DOMParser().parseFromString(xmlText, 'application/xml');

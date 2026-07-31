@@ -1,5 +1,6 @@
 import { nextPhotoId } from '../photos/photoEngine';
 import { nextTextId } from '../text/textEngine';
+import { getEffectiveVehicle } from '../store/useProjectStore';
 import type {
   CameraParams,
   MapParams,
@@ -70,7 +71,7 @@ export function serializeProject(state: ProjectState): ProjectFileV1 {
     video: state.video,
     camera: state.camera,
     map: state.map,
-    vehicle: state.vehicle,
+    vehicle: getEffectiveVehicle(state),
     musicVolume: state.musicVolume,
     photoDefaultDuration: state.photoDefaultDuration,
     snapEnabled: state.snapEnabled,
@@ -87,7 +88,11 @@ export function serializeProject(state: ProjectState): ProjectFileV1 {
 }
 
 export interface DeserializedProject {
-  data: Partial<Omit<ProjectState, 'track'>>;
+  data: Partial<Omit<ProjectState, 'tracks' | 'pendingVehicle'>>;
+  // Le impostazioni Mezzo salvate non sono un campo diretto di ProjectState (vivono dentro la
+  // traccia principale, o in pendingVehicle se non ne è ancora stata caricata una): vanno
+  // applicate a parte con l'azione updateVehicle, che sa dove scriverle.
+  vehicle: VehicleParams;
   skippedMusicNames: string[];
 }
 
@@ -122,7 +127,6 @@ export async function deserializeProject(json: unknown): Promise<DeserializedPro
       video: f.video,
       camera: f.camera,
       map: f.map,
-      vehicle: f.vehicle,
       musicVolume: f.musicVolume,
       photoDefaultDuration: f.photoDefaultDuration,
       snapEnabled: f.snapEnabled,
@@ -130,6 +134,7 @@ export async function deserializeProject(json: unknown): Promise<DeserializedPro
       photoClips,
       textOverlays,
     },
+    vehicle: f.vehicle,
     skippedMusicNames: (f.musicTracksMeta ?? []).map((m) => m.name),
   };
 }

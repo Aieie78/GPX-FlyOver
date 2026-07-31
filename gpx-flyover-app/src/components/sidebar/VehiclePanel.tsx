@@ -1,9 +1,9 @@
-import { useProjectStore } from '../../store/useProjectStore';
+import { getEffectiveVehicle, useProjectStore } from '../../store/useProjectStore';
 import type { VehicleIcon, VehicleIconStyle } from '../../types/domain';
 
 // Port dei controlli icona mezzo di gpx-flyover.html:160-191.
 export function VehiclePanel() {
-  const vehicle = useProjectStore((s) => s.vehicle);
+  const vehicle = useProjectStore(getEffectiveVehicle);
   const updateVehicle = useProjectStore((s) => s.updateVehicle);
 
   return (

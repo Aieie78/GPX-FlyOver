@@ -95,6 +95,17 @@ export interface VehicleParams {
   showLiveStats: boolean; // riquadro in basso a destra con velocità/quota/posizione in tempo reale
 }
 
+// Una traccia GPX caricata, con le proprie impostazioni Mezzo indipendenti. Fase 5 (multi-GPX,
+// mezzi cooperanti): il progetto passa da un singolo Track+VehicleParams a un elenco di
+// VehicleTrack, di cui uno solo alla volta è la traccia principale (isPrimary).
+export interface VehicleTrack {
+  id: number;
+  fileName: string;
+  track: Track;
+  vehicle: VehicleParams;
+  isPrimary: boolean;
+}
+
 export interface MusicTrack {
   id: number;
   name: string;
@@ -154,13 +165,15 @@ export interface FrameCamera {
 }
 
 export interface ProjectState {
-  track: Track | null;
+  tracks: VehicleTrack[]; // elenco tracce GPX caricate — una sola con isPrimary true
+  // Impostazioni Mezzo mostrate/modificabili nel pannello "Mezzo" quando non c'è ancora nessuna
+  // traccia caricata (tracks vuoto) — usate per inizializzare vehicle sulla prima traccia caricata.
+  pendingVehicle: VehicleParams;
   segmentMode: SegmentMode;
   title: string; // "Titolo del giro"
   video: VideoParams;
   camera: CameraParams;
   map: MapParams;
-  vehicle: VehicleParams;
   musicTracks: MusicTrack[];
   musicVolume: number; // 0..1, globale
   photoClips: PhotoClip[];
