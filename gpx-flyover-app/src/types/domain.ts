@@ -82,17 +82,28 @@ export interface MapParams {
   customStyleUrl: string; // fallback, ha precedenza su styleId se non vuoto
 }
 
-export type VehicleIcon = '🏍️' | '🚗' | '🚁' | '✈️' | '🚢';
+export type VehicleIcon = '🏍️' | '🚗' | '🚁' | '✈️' | '🚢' | 'none';
 export type VehicleIconStyle = 'filled' | 'outline' | 'dot';
 
 export interface VehicleParams {
   icon: VehicleIcon;
   color: string;
+  // Colore del percorso quando icon === 'none' (nessuna icona disegnata, solo il percorso resta
+  // visibile) — indipendente dal colore icona in quel caso, altrimenti ignorato (il percorso usa
+  // color). '' finché non è stato ancora assegnato/personalizzato (src/vehicle/routeColor.ts).
+  routeColor: string;
   iconStyle: VehicleIconStyle;
   size: number;
   use3DAltitude: boolean; // "quota reale" per tracce aeree
   altExaggeration: number;
-  showLiveStats: boolean; // riquadro in basso a destra con velocità/quota/posizione in tempo reale
+  showLiveStats: boolean; // riquadro con velocità/quota/posizione in tempo reale
+  // Posizione (frazione 0..1 del centro del riquadro, come TextOverlay.x/y) e scala del riquadro
+  // "dati in tempo reale" di questa traccia — trascinabile in anteprima (LiveStatsBoxHandle.tsx),
+  // ridimensionabile dal pannello Mezzo. Fase 5.3-bis: prima esisteva un solo riquadro fisso
+  // (basso a destra) per la sola traccia principale; ora ogni traccia ha il proprio.
+  liveStatsX: number;
+  liveStatsY: number;
+  liveStatsScale: number;
 }
 
 // Una traccia GPX caricata, con le proprie impostazioni Mezzo indipendenti. Fase 5 (multi-GPX,

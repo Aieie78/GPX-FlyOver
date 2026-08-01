@@ -26,7 +26,8 @@ interface SidebarProps {
 export function Sidebar({ collapsed }: SidebarProps) {
   const mapParams = useProjectStore((s) => s.map);
   const segmentMode = useProjectStore((s) => s.segmentMode);
-  const setTrack = useProjectStore((s) => s.setTrack);
+  const tracks = useProjectStore((s) => s.tracks);
+  const addTrack = useProjectStore((s) => s.addTrack);
   const setIsPlaying = usePlaybackStore((s) => s.setIsPlaying);
   const setCanPreview = usePlaybackStore((s) => s.setCanPreview);
 
@@ -36,6 +37,13 @@ export function Sidebar({ collapsed }: SidebarProps) {
   const [suggestedDurationSec, setSuggestedDurationSec] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadedFileName, setLoadedFileName] = useState('');
+  // Traccia in editing nel pannello Mezzo — sollevato qui perché condiviso tra GpxSourcePanel
+  // (evidenzia la voce nella lista) e VehiclePanel (legge/scrive le sue impostazioni). Se punta
+  // a una traccia rimossa, ricade sulla principale.
+  const [selectedTrackId, setSelectedTrackId] = useState<number | null>(null);
+  const effectiveSelectedTrackId = tracks.some((t) => t.id === selectedTrackId)
+    ? selectedTrackId
+    : (tracks.find((t) => t.isPrimary)?.id ?? null);
 
   const handleLoad = async () => {
     if (!mapParams.maptilerToken.trim()) {
@@ -52,11 +60,13 @@ export function Sidebar({ collapsed }: SidebarProps) {
     try {
       const text = await file.text();
       const parsed = parseGpx(text, segmentMode);
+      const isFirst = tracks.length === 0;
       const kmps = kmPerSec || 1.8;
-      setSuggestedDurationSec(Math.round(parsed.totalDist / 1000 / kmps));
+      setSuggestedDurationSec(isFirst ? Math.round(parsed.totalDist / 1000 / kmps) : null);
       setLoadedSegmentMode(segmentMode);
       setLoadedFileName(file.name);
-      setTrack(file.name, parsed);
+      const newId = addTrack(file.name, parsed);
+      setSelectedTrackId(newId);
     } catch (err) {
       console.error(err);
       setLoadError(err instanceof Error ? err.message : 'Errore durante il parsing del GPX');
@@ -65,7 +75,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
 
   return (
     <aside className={`sidebar${collapsed ? ' sidebar--collapsed' : ''}`}>
-      <ActionsPanel onLoad={handleLoad} />
+      <ActionsPanel onLoad={handleLoad} hasTracks={tracks.length > 0} />
       <div className="sidebar__sections">
         <SidebarSection title="Sorgente GPX" icon={FileUp} defaultOpen>
           <GpxSourcePanel
@@ -77,6 +87,8 @@ export function Sidebar({ collapsed }: SidebarProps) {
             suggestedDurationSec={suggestedDurationSec}
             loadError={loadError}
             loadedFileName={loadedFileName}
+            selectedTrackId={effectiveSelectedTrackId}
+            onSelectTrack={setSelectedTrackId}
           />
         </SidebarSection>
         <SidebarSection title="Video" icon={Video}>
@@ -89,7 +101,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
           <MapStylePanel />
         </SidebarSection>
         <SidebarSection title="Mezzo" icon={Car}>
-          <VehiclePanel />
+          <VehiclePanel selectedTrackId={effectiveSelectedTrackId} onSelectTrack={setSelectedTrackId} />
         </SidebarSection>
         <SidebarSection title="Musica & Foto" icon={Music}>
           <MusicPhotosPanel />

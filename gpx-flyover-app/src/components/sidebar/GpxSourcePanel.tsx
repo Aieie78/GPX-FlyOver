@@ -1,7 +1,7 @@
-import { AlertTriangle, Info, Lightbulb } from 'lucide-react';
+import { AlertTriangle, Info, Lightbulb, Trash2 } from 'lucide-react';
 import { fmtDuration } from '../../geo/geo';
-import { getPrimaryTrack, useProjectStore } from '../../store/useProjectStore';
-import type { SegmentMode } from '../../types/domain';
+import { useProjectStore } from '../../store/useProjectStore';
+import type { SegmentMode, VehicleTrack } from '../../types/domain';
 
 interface GpxSourcePanelProps {
   file: File | null;
@@ -12,25 +12,100 @@ interface GpxSourcePanelProps {
   suggestedDurationSec: number | null;
   loadError: string | null;
   loadedFileName: string;
+  selectedTrackId: number | null;
+  onSelectTrack: (id: number) => void;
+}
+
+function TrackStats({ track, isSelected, onSelect, onRemove }: {
+  track: VehicleTrack;
+  isSelected: boolean;
+  onSelect: () => void;
+  onRemove: () => void;
+}) {
+  const setPrimaryTrack = useProjectStore((s) => s.setPrimaryTrack);
+  const t = track.track;
+  return (
+    <div className={`gpx-track-row${isSelected ? ' gpx-track-row--selected' : ''}`} onClick={onSelect}>
+      <button
+        type="button"
+        className="gpx-track-row__remove"
+        title="Rimuovi traccia"
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove();
+        }}
+      >
+        <Trash2 size={13} />
+      </button>
+      <b>{track.fileName}</b>
+      <br />
+      <label className="gpx-track-row__primary" onClick={(e) => e.stopPropagation()}>
+        <input type="radio" name="primary-track" checked={track.isPrimary} onChange={() => setPrimaryTrack(track.id)} />
+        principale
+      </label>
+      <br />
+      Distanza: {(t.totalDist / 1000).toFixed(1)} km
+      <br />
+      Dislivello +: {Math.round(t.gain)} m &nbsp; -: {Math.round(t.loss)} m
+      <br />
+      Durata traccia: {fmtDuration(t.durationSec)}
+      {t.nSegmentsFound > 1 && (
+        <>
+          <br />
+          <span className="stats-warn">
+            <AlertTriangle size={12} /> Il file contiene {t.nSegmentsFound} segmenti.
+          </span>
+        </>
+      )}
+      {t.decimated && (
+        <>
+          <br />
+          <span className="stats-info">
+            <Info size={12} /> Traccia molto densa ({t.originalCount.toLocaleString('it-IT')} punti): ridotta a{' '}
+            {t.usedCount.toLocaleString('it-IT')} per restare fluida.
+          </span>
+        </>
+      )}
+      {!t.hasElevationData && (
+        <>
+          <br />
+          <span className="stats-error">
+            <AlertTriangle size={12} /> Non trovo dati di quota validi in questo GPX.
+          </span>
+        </>
+      )}
+      {t.durationSec == null && (
+        <>
+          <br />
+          <span className="stats-error">
+            <AlertTriangle size={12} /> Nessun timestamp valido: la sincronizzazione multi-mezzo non sarà possibile
+            per questa traccia.
+          </span>
+        </>
+      )}
+    </div>
+  );
 }
 
 // Port dei controlli di caricamento GPX e delle statistiche post-caricamento
 // (gpx-flyover.html:88-96, 112-116, 397-422). Il pulsante "1. Carica" vive nell'ActionsPanel
-// sticky in cima alla sidebar insieme ad Anteprima/Registra — questo pannello espone solo i
-// campi di configurazione, con lo stato del file/km-per-sec sollevato in Sidebar.tsx.
+// sticky in cima alla sidebar insieme ad Anteprima/Registra — questo pannello espone i campi di
+// configurazione (stato del file/km-per-sec sollevato in Sidebar.tsx) più, dalla Fase 5.2,
+// l'elenco delle tracce già caricate (aggiungi/rimuovi/designa principale).
 export function GpxSourcePanel({
   file,
   onFileChange,
   kmPerSec,
   onKmPerSecChange,
-  loadedSegmentMode,
   suggestedDurationSec,
   loadError,
-  loadedFileName,
+  selectedTrackId,
+  onSelectTrack,
 }: GpxSourcePanelProps) {
   const segmentMode = useProjectStore((s) => s.segmentMode);
   const setSegmentMode = useProjectStore((s) => s.setSegmentMode);
-  const track = useProjectStore((s) => getPrimaryTrack(s)?.track ?? null);
+  const tracks = useProjectStore((s) => s.tracks);
+  const removeTrack = useProjectStore((s) => s.removeTrack);
   const title = useProjectStore((s) => s.title);
   const setTitle = useProjectStore((s) => s.setTitle);
 
@@ -69,54 +144,24 @@ export function GpxSourcePanel({
 
       {loadError && <p className="field-error">{loadError}</p>}
 
-      {track && (
-        <div className="stats-box">
-          <b>{title || loadedFileName}</b>
-          <br />
-          Distanza: {(track.totalDist / 1000).toFixed(1)} km
-          <br />
-          Dislivello +: {Math.round(track.gain)} m &nbsp; -: {Math.round(track.loss)} m
-          <br />
-          Durata traccia: {fmtDuration(track.durationSec)}
-          {track.nSegmentsFound > 1 && (
-            <>
-              <br />
-              <span className="stats-warn">
-                <AlertTriangle size={12} /> Il file contiene {track.nSegmentsFound} segmenti —{' '}
-                {loadedSegmentMode === 'concat'
-                  ? 'li ho concatenati tutti in ordine.'
-                  : 'sto usando solo il più lungo (cambia modalità sopra se serve concatenarli).'}
-              </span>
-            </>
-          )}
-          {track.decimated && (
-            <>
-              <br />
-              <span className="stats-info">
-                <Info size={12} /> Traccia molto densa ({track.originalCount.toLocaleString('it-IT')} punti): ridotta a{' '}
-                {track.usedCount.toLocaleString('it-IT')} per restare fluida, la forma del percorso non cambia
-                sensibilmente.
-              </span>
-            </>
-          )}
-          {!track.hasElevationData && (
-            <>
-              <br />
-              <span className="stats-error">
-                <AlertTriangle size={12} /> Non trovo dati di quota validi in questo GPX. Profilo altimetrico e "Quota
-                reale" non saranno affidabili.
-              </span>
-            </>
-          )}
-          {suggestedDurationSec != null && (
-            <>
-              <br />
-              <span className="stats-tip">
-                <Lightbulb size={12} /> Per leggere bene le località: durata video consigliata ≈{' '}
-                {suggestedDurationSec}s (regola tu il campo "Durata video" nella sezione Video)
-              </span>
-            </>
-          )}
+      {suggestedDurationSec != null && (
+        <p className="stats-tip">
+          <Lightbulb size={12} /> Per leggere bene le località: durata video consigliata ≈ {suggestedDurationSec}s
+          (regola tu il campo "Durata video" nella sezione Video)
+        </p>
+      )}
+
+      {tracks.length > 0 && (
+        <div className="gpx-track-list">
+          {tracks.map((t) => (
+            <TrackStats
+              key={t.id}
+              track={t}
+              isSelected={t.id === selectedTrackId}
+              onSelect={() => onSelectTrack(t.id)}
+              onRemove={() => removeTrack(t.id)}
+            />
+          ))}
         </div>
       )}
     </>

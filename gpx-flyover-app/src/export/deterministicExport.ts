@@ -5,7 +5,9 @@ import { updateRouteDoneUpTo } from '../map/mapSetup';
 import { computePathIndex } from '../timeline/timelineMath';
 import {
   buildProfileBackground,
+  buildSecondaryIndexes,
   computeAspectCrop,
+  computeSecondaryFrame,
   drawOverlayFrame,
   scaleMusicTracksForSpeed,
   scalePhotoClipsForSpeed,
@@ -42,10 +44,13 @@ export async function recordFlightDeterministic(
   const {
     map,
     track,
+    primaryTrackId,
+    primaryFileName,
     recCanvas,
     video,
     camera,
     vehicle,
+    secondaryTracks,
     musicTracks,
     musicVolume,
     title,
@@ -53,6 +58,7 @@ export async function recordFlightDeterministic(
     photoClips,
     textOverlays,
   } = args;
+  const secondaryIndexes = buildSecondaryIndexes(secondaryTracks);
 
   const baseDuration = video.durationSec;
   const effectiveDuration = baseDuration / selectedSpeed;
@@ -94,7 +100,12 @@ export async function recordFlightDeterministic(
   // davvero pronta prima di iniziare a disegnare/codificare.
   const pathIndexAtStart = computePathIndex(frameStart / p.fps, p.totalFrames, p.fps, scaledPhotoClips);
   map.jumpTo(cameraForFrame(p, pathIndexAtStart, smoothBearing));
-  updateRouteDoneUpTo(map, p.path, pathIndexAtStart);
+  updateRouteDoneUpTo(
+    map,
+    p.path.slice(0, pathIndexAtStart + 1).map((pt) => [pt.lon, pt.lat]),
+    String(primaryTrackId),
+  );
+  computeSecondaryFrame(map, secondaryIndexes, p.path[pathIndexAtStart].clockTimeMs);
   await waitForMapIdle(map);
 
   const musicBuffer = await renderMusicMixOffline(scaledMusicTracks, musicVolume, effectiveDuration);
@@ -142,7 +153,12 @@ export async function recordFlightDeterministic(
         smoothBearing = stepBearing(smoothBearing, lastPathIndex, p);
       }
       map.jumpTo(cameraForFrame(p, pathIndex, smoothBearing));
-      updateRouteDoneUpTo(map, p.path, pathIndex);
+      updateRouteDoneUpTo(
+        map,
+        p.path.slice(0, pathIndex + 1).map((pt) => [pt.lon, pt.lat]),
+        String(primaryTrackId),
+      );
+      const secondaryPositions = computeSecondaryFrame(map, secondaryIndexes, p.path[pathIndex].clockTimeMs);
 
       // Un solo repaint reale prima di catturare il canvas — qui non serve più ritmare
       // sull'orologio reale come in recordFlight: ogni fotogramma può richiedere quanto tempo
@@ -150,17 +166,27 @@ export async function recordFlightDeterministic(
       // non dal tempo reale impiegato per disegnarli.
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
-      drawOverlayFrame(composeCtx, composeCanvas, map, track, vehicle, profileBg, {
-        title: p.title,
-        cur: p.path[pathIndex],
-        progress: (pathIndex + 1) / p.totalFrames,
-        zoom: p.zoom,
-        pitch: p.pitch,
-        timeSec: videoTimeSec,
-        photoClips: scaledPhotoClips,
-        textOverlays: scaledTextOverlays,
-        showAltitudeProfile: video.showAltitudeProfile,
-      });
+      drawOverlayFrame(
+        composeCtx,
+        composeCanvas,
+        map,
+        track,
+        vehicle,
+        primaryFileName,
+        profileBg,
+        {
+          title: p.title,
+          cur: p.path[pathIndex],
+          progress: (pathIndex + 1) / p.totalFrames,
+          zoom: p.zoom,
+          pitch: p.pitch,
+          timeSec: videoTimeSec,
+          photoClips: scaledPhotoClips,
+          textOverlays: scaledTextOverlays,
+          showAltitudeProfile: video.showAltitudeProfile,
+        },
+        secondaryPositions,
+      );
       recCtx.drawImage(composeCanvas, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, crop.outW, crop.outH);
 
       await videoSource.add((i - frameStart) / p.fps, 1 / p.fps);

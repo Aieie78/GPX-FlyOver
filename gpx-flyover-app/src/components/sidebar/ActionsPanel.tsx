@@ -8,12 +8,13 @@ import { usePlaybackStore } from '../../store/usePlaybackStore';
 
 interface ActionsPanelProps {
   onLoad: () => void;
+  hasTracks: boolean;
 }
 
 // Port dei pulsanti 1/2/3 e dell'output di gpx-flyover.html:203-212, 730-818, 1386-1395,
 // 1501-1505. Sticky in cima alla sidebar (Sidebar.tsx), sempre visibile durante lo scroll
 // delle sezioni sottostanti.
-export function ActionsPanel({ onLoad }: ActionsPanelProps) {
+export function ActionsPanel({ onLoad, hasTracks }: ActionsPanelProps) {
   const canPreview = usePlaybackStore((s) => s.canPreview);
   const isRecording = usePlaybackStore((s) => s.isRecording);
   const setIsRecording = usePlaybackStore((s) => s.setIsRecording);
@@ -49,17 +50,20 @@ export function ActionsPanel({ onLoad }: ActionsPanelProps) {
     setIsRecording(true);
     setExportProgress(0);
     try {
-      const { video, camera, musicTracks, musicVolume, title } = useProjectStore.getState();
+      const { video, camera, musicTracks, musicVolume, title, tracks } = useProjectStore.getState();
       const photoClips = useProjectStore.getState().photoClips;
       const textOverlays = useProjectStore.getState().textOverlays;
       recCanvas.style.display = 'block';
       const recordArgs = {
         map,
         track: primary.track,
+        primaryTrackId: primary.id,
+        primaryFileName: primary.fileName,
         recCanvas,
         video,
         camera,
         vehicle: primary.vehicle,
+        secondaryTracks: tracks.filter((t) => !t.isPrimary),
         musicTracks,
         musicVolume,
         title,
@@ -123,7 +127,7 @@ export function ActionsPanel({ onLoad }: ActionsPanelProps) {
   return (
     <div className="sidebar-actions">
       <button type="button" className="action-btn" onClick={onLoad}>
-        1. Carica traccia sulla mappa
+        {hasTracks ? 'Aggiungi altra traccia' : '1. Carica traccia sulla mappa'}
       </button>
       <button type="button" className="action-btn" disabled={!canPreview || isRecording} onClick={handlePreview}>
         2. Anteprima (senza registrare)

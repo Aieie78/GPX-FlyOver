@@ -3,6 +3,7 @@ import { buildAnimParams, cameraForFrame, initialBearing, stepBearing } from '..
 import { ensureAudioCtx } from '../audio/musicEngine';
 import { renderMusicMixOffline, sliceAudioBuffer } from '../audio/musicMix';
 import { updateRouteDoneUpTo } from '../map/mapSetup';
+import { buildTimeIndex, findPointAtTime, type TimedPoint, type TimeIndexedTrack } from '../geo/geo';
 import { computePathIndex } from '../timeline/timelineMath';
 import { drawAltitudeLine, drawVehicleIcon, vehicleScreenPos } from '../vehicle/vehicleIcon';
 import { drawPhotoCover, getActivePhotoLayers } from '../photos/photoEngine';
@@ -17,9 +18,19 @@ import type {
   TextOverlay,
   Track,
   VehicleParams,
+  VehicleTrack,
   VideoAspectRatio,
   VideoParams,
 } from '../types/domain';
+
+// Posizione di una traccia secondaria in un dato fotogramma (Fase 5.3): point è null quando il
+// timestamp calcolato cade fuori dal range coperto da quella traccia — l'icona non va disegnata.
+export interface SecondaryFramePosition {
+  vehicle: VehicleParams;
+  minEle: number;
+  fileName: string;
+  point: TimedPoint | null;
+}
 
 export interface AspectCrop {
   outW: number;
@@ -213,8 +224,10 @@ export function drawOverlayFrame(
   map: MapLibreMap,
   track: Track,
   vehicle: VehicleParams,
+  vehicleLabel: string,
   profileBg: ProfileBackground,
   args: DrawOverlayArgs,
+  secondaryPositions: SecondaryFramePosition[] = [],
 ): void {
   const { title, cur, progress, zoom, pitch, timeSec, photoClips, textOverlays, showAltitudeProfile } = args;
   const mapCanvas = map.getCanvas();
@@ -227,9 +240,28 @@ export function drawOverlayFrame(
   const mapRect = map.getContainer().getBoundingClientRect();
   const scaleX = recCanvas.width / mapRect.width;
   const scaleY = recCanvas.height / mapRect.height;
-  const pos = vehicleScreenPos(map, cur, zoom, pitch, track.minEle, vehicle);
-  drawAltitudeLine(recCtx, pos.groundX * scaleX, pos.groundY * scaleY, pos.x * scaleX, pos.y * scaleY, vehicle.color, s);
-  drawVehicleIcon(recCtx, pos.x * scaleX, pos.y * scaleY, s, vehicle);
+  if (vehicle.icon !== 'none') {
+    const pos = vehicleScreenPos(map, cur, zoom, pitch, track.minEle, vehicle);
+    drawAltitudeLine(recCtx, pos.groundX * scaleX, pos.groundY * scaleY, pos.x * scaleX, pos.y * scaleY, vehicle.color, s);
+    drawVehicleIcon(recCtx, pos.x * scaleX, pos.y * scaleY, s, vehicle);
+  }
+
+  // icone delle tracce secondarie sincronizzate per orario GPX reale (Fase 5.3) — non disegnata
+  // se point è null (timestamp fuori dal range coperto da quella traccia) o se l'icona è "nessuna".
+  for (const sec of secondaryPositions) {
+    if (!sec.point || sec.vehicle.icon === 'none') continue;
+    const secPos = vehicleScreenPos(map, sec.point, zoom, pitch, sec.minEle, sec.vehicle);
+    drawAltitudeLine(
+      recCtx,
+      secPos.groundX * scaleX,
+      secPos.groundY * scaleY,
+      secPos.x * scaleX,
+      secPos.y * scaleY,
+      sec.vehicle.color,
+      s,
+    );
+    drawVehicleIcon(recCtx, secPos.x * scaleX, secPos.y * scaleY, s, sec.vehicle);
+  }
 
   // titolo
   recCtx.font = `bold ${34 * s}px system-ui`;
@@ -292,25 +324,77 @@ export function drawOverlayFrame(
     drawTextOverlay(recCtx, recCanvas.width, recCanvas.height, t.overlay.text, t.alpha, t.overlay.x, t.overlay.y);
   }
 
-  // riquadro velocità/quota/posizione in tempo reale, se attivato
+  // riquadro/i "dati in tempo reale": uno per ciascuna traccia con la checkbox attiva (Fase
+  // 5.3-bis) — principale (posizione/scala dal proprio VehicleParams) e/o secondarie.
   if (vehicle.showLiveStats) {
-    drawLiveStatsBox(recCtx, recCanvas.width, recCanvas.height, cur);
+    drawLiveStatsBox(
+      recCtx,
+      recCanvas.width,
+      recCanvas.height,
+      cur,
+      vehicleLabel,
+      vehicle.color,
+      vehicle.liveStatsX,
+      vehicle.liveStatsY,
+      vehicle.liveStatsScale,
+    );
+  }
+  for (const sec of secondaryPositions) {
+    if (!sec.point || !sec.vehicle.showLiveStats) continue;
+    drawLiveStatsBox(
+      recCtx,
+      recCanvas.width,
+      recCanvas.height,
+      { ...sec.point, clockTimeMs: cur.clockTimeMs },
+      sec.fileName,
+      sec.vehicle.color,
+      sec.vehicle.liveStatsX,
+      sec.vehicle.liveStatsY,
+      sec.vehicle.liveStatsScale,
+    );
   }
 }
 
 export interface RecordFlightArgs {
   map: MapLibreMap;
   track: Track;
+  primaryTrackId: number;
+  primaryFileName: string;
   recCanvas: HTMLCanvasElement;
   video: VideoParams;
   camera: CameraParams;
   vehicle: VehicleParams;
+  secondaryTracks: VehicleTrack[];
   musicTracks: MusicTrack[];
   musicVolume: number;
   title: string;
   selectedSpeed: PlaybackSpeed;
   photoClips: PhotoClip[];
   textOverlays: TextOverlay[];
+}
+
+// Prepara, per ciascuna traccia secondaria, l'indice per la ricerca per timestamp (una volta per
+// registrazione, non per frame) e calcola posizione + coordinate del tratto "già percorso" per un
+// dato istante di tempo reale (clockTimeMs della principale in quel frame) — condiviso da
+// recordFlight e recordFlightDeterministic.
+export function buildSecondaryIndexes(secondaryTracks: VehicleTrack[]): Array<{ track: VehicleTrack; timeIndex: TimeIndexedTrack }> {
+  return secondaryTracks.map((t) => ({ track: t, timeIndex: buildTimeIndex(t.track) }));
+}
+
+export function computeSecondaryFrame(
+  map: MapLibreMap,
+  secondaryIndexes: Array<{ track: VehicleTrack; timeIndex: TimeIndexedTrack }>,
+  targetTimeMs: number | null,
+): SecondaryFramePosition[] {
+  return secondaryIndexes.map(({ track: t, timeIndex }) => {
+    const point = targetTimeMs != null ? findPointAtTime(timeIndex, targetTimeMs) : null;
+    if (point) {
+      const coords: Array<[number, number]> = timeIndex.pts.slice(0, point.idx).map((p) => [p.lon, p.lat]);
+      coords.push([point.lon, point.lat]);
+      updateRouteDoneUpTo(map, coords, String(t.id));
+    }
+    return { vehicle: t.vehicle, minEle: t.track.minEle, fileName: t.fileName, point };
+  });
 }
 
 // Registrazione lineare, dall'inizio alla fine, per il file video — riproduce il volo in
@@ -322,10 +406,13 @@ export async function recordFlight(args: RecordFlightArgs): Promise<Blob> {
   const {
     map,
     track,
+    primaryTrackId,
+    primaryFileName,
     recCanvas,
     video,
     camera,
     vehicle,
+    secondaryTracks,
     musicTracks,
     musicVolume,
     title,
@@ -333,6 +420,7 @@ export async function recordFlight(args: RecordFlightArgs): Promise<Blob> {
     photoClips,
     textOverlays,
   } = args;
+  const secondaryIndexes = buildSecondaryIndexes(secondaryTracks);
 
   const baseDuration = video.durationSec;
   const effectiveDuration = baseDuration / selectedSpeed; // x1.5/x2 = video più corto e più rapido, x0.5 = più lungo e lento
@@ -380,7 +468,12 @@ export async function recordFlight(args: RecordFlightArgs): Promise<Blob> {
   // il click invece che a mappa già pronta in quella posizione.
   const pathIndexAtStart = computePathIndex(frameStart / p.fps, p.totalFrames, p.fps, scaledPhotoClips);
   map.jumpTo(cameraForFrame(p, pathIndexAtStart, smoothBearing));
-  updateRouteDoneUpTo(map, p.path, pathIndexAtStart);
+  updateRouteDoneUpTo(
+    map,
+    p.path.slice(0, pathIndexAtStart + 1).map((pt) => [pt.lon, pt.lat]),
+    String(primaryTrackId),
+  );
+  computeSecondaryFrame(map, secondaryIndexes, p.path[pathIndexAtStart].clockTimeMs);
   await waitForMapIdle(map);
 
   // --- musica di sottofondo (posizionamento libero per brano, opzionale) ---
@@ -448,19 +541,34 @@ export async function recordFlight(args: RecordFlightArgs): Promise<Blob> {
       smoothBearing = stepBearing(smoothBearing, lastPathIndex, p);
     }
     map.jumpTo(cameraForFrame(p, pathIndex, smoothBearing));
-    updateRouteDoneUpTo(map, p.path, pathIndex);
+    updateRouteDoneUpTo(
+      map,
+      p.path.slice(0, pathIndex + 1).map((pt) => [pt.lon, pt.lat]),
+      String(primaryTrackId),
+    );
+    const secondaryPositions = computeSecondaryFrame(map, secondaryIndexes, p.path[pathIndex].clockTimeMs);
     await waitForFrameAndPace(recordingStart + videoTimeSec * 1000);
-    drawOverlayFrame(composeCtx, composeCanvas, map, track, vehicle, profileBg, {
-      title: p.title,
-      cur: p.path[pathIndex],
-      progress: (pathIndex + 1) / p.totalFrames,
-      zoom: p.zoom,
-      pitch: p.pitch,
-      timeSec: videoTimeSec,
-      photoClips: scaledPhotoClips,
-      textOverlays: scaledTextOverlays,
-      showAltitudeProfile: video.showAltitudeProfile,
-    });
+    drawOverlayFrame(
+      composeCtx,
+      composeCanvas,
+      map,
+      track,
+      vehicle,
+      primaryFileName,
+      profileBg,
+      {
+        title: p.title,
+        cur: p.path[pathIndex],
+        progress: (pathIndex + 1) / p.totalFrames,
+        zoom: p.zoom,
+        pitch: p.pitch,
+        timeSec: videoTimeSec,
+        photoClips: scaledPhotoClips,
+        textOverlays: scaledTextOverlays,
+        showAltitudeProfile: video.showAltitudeProfile,
+      },
+      secondaryPositions,
+    );
     recCtx.drawImage(composeCanvas, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, crop.outW, crop.outH);
   }
 

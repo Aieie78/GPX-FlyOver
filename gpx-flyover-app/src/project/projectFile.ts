@@ -1,6 +1,5 @@
 import { nextPhotoId } from '../photos/photoEngine';
 import { nextTextId } from '../text/textEngine';
-import { getEffectiveVehicle } from '../store/useProjectStore';
 import type {
   CameraParams,
   MapParams,
@@ -13,7 +12,7 @@ import type {
   VideoParams,
 } from '../types/domain';
 
-const PROJECT_FILE_VERSION = 1;
+const PROJECT_FILE_VERSION = 2;
 
 interface SerializedPhotoClip {
   name: string;
@@ -21,6 +20,16 @@ interface SerializedPhotoClip {
   duration: number;
   rotation: PhotoClip['rotation'];
   dataUrl: string;
+}
+
+// Solo metadati per traccia: il GPX vero e proprio NON viene incorporato (si ricarica sempre a
+// mano dalla sezione Sorgente GPX) — fileName+vehicle+isPrimary servono solo come promemoria di
+// come erano configurate le tracce al momento del salvataggio, da riapplicare manualmente dopo
+// aver ricaricato ciascun file (nessuna riassociazione automatica).
+interface SerializedTrackMeta {
+  fileName: string;
+  vehicle: VehicleParams;
+  isPrimary: boolean;
 }
 
 interface ProjectFileV1 {
@@ -34,13 +43,31 @@ interface ProjectFileV1 {
   musicVolume: number;
   photoDefaultDuration: number;
   snapEnabled: boolean;
-  // Solo metadati: il file audio vero e proprio NON viene incorporato (potrebbe pesare decine di
-  // MB in base64 per brano) — servono solo come promemoria di quali brani riaggiungere a mano
-  // dalla sezione Musica & Foto dopo il caricamento, il Track GPX si ricarica allo stesso modo.
   musicTracksMeta: Array<Omit<MusicTrack, 'buffer' | 'id'>>;
   photoClips: SerializedPhotoClip[];
   textOverlays: Array<Omit<TextOverlay, 'id'>>;
 }
+
+interface ProjectFileV2 {
+  version: 2;
+  title: string;
+  segmentMode: SegmentMode;
+  video: VideoParams;
+  camera: CameraParams;
+  map: MapParams;
+  tracksMeta: SerializedTrackMeta[];
+  musicVolume: number;
+  photoDefaultDuration: number;
+  snapEnabled: boolean;
+  // Solo metadati: il file audio vero e proprio NON viene incorporato (potrebbe pesare decine di
+  // MB in base64 per brano) — servono solo come promemoria di quali brani riaggiungere a mano
+  // dalla sezione Musica & Foto dopo il caricamento.
+  musicTracksMeta: Array<Omit<MusicTrack, 'buffer' | 'id'>>;
+  photoClips: SerializedPhotoClip[];
+  textOverlays: Array<Omit<TextOverlay, 'id'>>;
+}
+
+type ProjectFile = ProjectFileV1 | ProjectFileV2;
 
 function photoToDataUrl(img: HTMLImageElement): string {
   const canvas = document.createElement('canvas');
@@ -60,10 +87,11 @@ function loadImageFromDataUrl(dataUrl: string): Promise<HTMLImageElement> {
   });
 }
 
-// Converte lo stato di progetto (esclusa la traccia GPX, sempre da ricaricare a mano) in un
+// Converte lo stato di progetto (escluse le tracce GPX, sempre da ricaricare a mano) in un
 // oggetto JSON-serializzabile: le foto sono incorporate come dataURL (in genere poche centinaia
-// di KB l'una), i brani musicali solo come metadati (vedi ProjectFileV1).
-export function serializeProject(state: ProjectState): ProjectFileV1 {
+// di KB l'una), i brani musicali solo come metadati, le tracce solo come promemoria
+// nome-file/impostazioni Mezzo/principale (vedi ProjectFileV2).
+export function serializeProject(state: ProjectState): ProjectFileV2 {
   return {
     version: PROJECT_FILE_VERSION,
     title: state.title,
@@ -71,7 +99,7 @@ export function serializeProject(state: ProjectState): ProjectFileV1 {
     video: state.video,
     camera: state.camera,
     map: state.map,
-    vehicle: getEffectiveVehicle(state),
+    tracksMeta: state.tracks.map((t) => ({ fileName: t.fileName, vehicle: t.vehicle, isPrimary: t.isPrimary })),
     musicVolume: state.musicVolume,
     photoDefaultDuration: state.photoDefaultDuration,
     snapEnabled: state.snapEnabled,
@@ -89,10 +117,10 @@ export function serializeProject(state: ProjectState): ProjectFileV1 {
 
 export interface DeserializedProject {
   data: Partial<Omit<ProjectState, 'tracks' | 'pendingVehicle'>>;
-  // Le impostazioni Mezzo salvate non sono un campo diretto di ProjectState (vivono dentro la
-  // traccia principale, o in pendingVehicle se non ne è ancora stata caricata una): vanno
-  // applicate a parte con l'azione updateVehicle, che sa dove scriverle.
-  vehicle: VehicleParams;
+  // Le impostazioni Mezzo salvate non sono un campo diretto di ProjectState (vivono dentro le
+  // tracce, ricaricate a mano una per una): restano qui come promemoria da riapplicare a mano
+  // dopo aver ricaricato ciascun file GPX (nessuna riassociazione automatica).
+  tracksMeta: SerializedTrackMeta[];
   skippedMusicNames: string[];
 }
 
@@ -101,11 +129,13 @@ export interface DeserializedProject {
 // incorporato) — i loro nomi sono restituiti in skippedMusicNames per informare l'utente.
 // Assegna id nuovi (nextPhotoId/nextTextId) invece di riusare quelli salvati, per evitare
 // collisioni con elementi aggiunti nella sessione corrente dopo il caricamento.
+// Accetta anche file v1 (singolo `vehicle`, prima della Fase 5.2 multi-traccia) per compatibilità.
 export async function deserializeProject(json: unknown): Promise<DeserializedProject> {
-  if (!json || typeof json !== 'object' || (json as { version?: unknown }).version !== PROJECT_FILE_VERSION) {
+  const version = (json as { version?: unknown } | null)?.version;
+  if (!json || typeof json !== 'object' || (version !== 1 && version !== 2)) {
     throw new Error('File di progetto non valido o di una versione non supportata.');
   }
-  const f = json as ProjectFileV1;
+  const f = json as ProjectFile;
 
   const photoClips: PhotoClip[] = await Promise.all(
     (f.photoClips ?? []).map(async (p) => ({
@@ -119,6 +149,9 @@ export async function deserializeProject(json: unknown): Promise<DeserializedPro
   );
 
   const textOverlays: TextOverlay[] = (f.textOverlays ?? []).map((t) => ({ id: nextTextId(), ...t }));
+
+  const tracksMeta: SerializedTrackMeta[] =
+    f.version === 1 ? [{ fileName: '', vehicle: f.vehicle, isPrimary: true }] : f.tracksMeta;
 
   return {
     data: {
@@ -134,7 +167,7 @@ export async function deserializeProject(json: unknown): Promise<DeserializedPro
       photoClips,
       textOverlays,
     },
-    vehicle: f.vehicle,
+    tracksMeta,
     skippedMusicNames: (f.musicTracksMeta ?? []).map((m) => m.name),
   };
 }

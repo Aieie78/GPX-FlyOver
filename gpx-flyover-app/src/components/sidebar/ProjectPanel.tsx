@@ -32,13 +32,17 @@ export function ProjectPanel() {
     if (!file) return;
     try {
       const json = JSON.parse(await file.text());
-      const { data, vehicle, skippedMusicNames } = await deserializeProject(json);
+      const { data, tracksMeta, skippedMusicNames } = await deserializeProject(json);
       useProjectStore.getState().loadProjectData(data);
-      useProjectStore.getState().updateVehicle(vehicle);
       const musicNote = skippedMusicNames.length
         ? ` Brani musicali da riaggiungere manualmente (audio non incluso nel salvataggio): ${skippedMusicNames.join(', ')}.`
         : '';
-      setStatusMessage(`Progetto caricato. Ricarica la traccia GPX dalla sezione "Sorgente GPX".${musicNote}`);
+      const tracksNote = tracksMeta.length
+        ? ` Tracce da ricaricare, con le impostazioni Mezzo da riconfigurare a mano: ${tracksMeta
+            .map((t) => `${t.fileName || '(nome non salvato)'}${t.isPrimary ? ' [principale]' : ''}`)
+            .join(', ')}.`
+        : '';
+      setStatusMessage(`Progetto caricato.${tracksNote}${musicNote}`);
     } catch (err) {
       console.error('Errore caricamento progetto', err);
       setStatusMessage(err instanceof Error ? `Impossibile caricare il progetto: ${err.message}` : 'Impossibile caricare il progetto.');

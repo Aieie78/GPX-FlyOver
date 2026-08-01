@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="data:image/png;base64,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">
+<title>Istruzioni — GPX Flyover Video Generator</title>
+<style>
+  :root{color-scheme:dark;}
+  html,body{margin:0;background:#0b0d10;color:#eee;font-family:system-ui,Segoe UI,Arial,sans-serif;line-height:1.5;}
+  .wrap{max-width:920px;margin:0 auto;padding:32px 24px 80px;}
+  h1{font-size:26px;margin:0 0 4px;}
+  h1 .icon{width:36px;height:36px;vertical-align:middle;margin-right:10px;border-radius:8px;}
+  .subtitle{color:#9aa4b2;font-size:14px;margin-bottom:32px;}
+  h2{font-size:18px;color:#ffcc00;border-bottom:1px solid #262b33;padding-bottom:8px;margin-top:48px;}
+  h3{font-size:15px;color:#eee;margin:22px 0 4px;display:flex;align-items:center;gap:8px;}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;flex:none;}
+  .field{background:#14171c;border:1px solid #262b33;border-radius:10px;padding:14px 18px;margin-bottom:14px;}
+  .field .name{font-weight:700;color:#ffcc00;font-size:14px;}
+  .field .row{display:flex;gap:24px;margin-top:8px;flex-wrap:wrap;}
+  .field .col{flex:1;min-width:220px;}
+  .field .label{font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#6e7885;margin-bottom:3px;}
+  .field .text{font-size:13.5px;color:#d6dbe1;}
+  .default{display:inline-block;background:#2a313c;color:#9ecbff;border-radius:5px;padding:1px 7px;font-size:12px;font-family:monospace;}
+  .warn{background:#2a2214;border-left:3px solid #e8b400;padding:10px 14px;border-radius:6px;font-size:13px;color:#f0d896;margin:14px 0;}
+  .tip{background:#12232a;border-left:3px solid #00e5ff;padding:10px 14px;border-radius:6px;font-size:13px;color:#bfeaf5;margin:14px 0;}
+  .steps{counter-reset:step;list-style:none;padding:0;}
+  .steps li{counter-increment:step;position:relative;padding:10px 0 10px 42px;border-bottom:1px solid #1c2027;}
+  .steps li:last-child{border-bottom:none;}
+  .steps li::before{content:counter(step);position:absolute;left:0;top:8px;width:26px;height:26px;background:#e8b400;color:#141414;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;}
+  .steps b{color:#ffcc00;}
+  code{background:#1d222a;padding:1px 6px;border-radius:4px;font-size:12.5px;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:8px;}
+  td,th{border-bottom:1px solid #262b33;padding:8px 6px;text-align:left;}
+  th{color:#9aa4b2;font-weight:600;font-size:12px;text-transform:uppercase;}
+  .toc{background:#14171c;border:1px solid #262b33;border-radius:10px;padding:16px 20px;margin-bottom:32px;}
+  .toc a{color:#9ecbff;text-decoration:none;font-size:13.5px;}
+  .toc ul{margin:6px 0 0;padding-left:18px;}
+  .toc li{margin-bottom:4px;}
+  kbd{background:#1d222a;border:1px solid #333a45;border-bottom-width:2px;border-radius:5px;padding:1px 7px;font-size:12px;font-family:monospace;color:#eee;}
+  @media print{
+    html,body{background:#fff;color:#111;}
+    .wrap{max-width:100%;}
+    h2{color:#8a6d00;border-bottom-color:#ccc;}
+    .field{background:#f7f7f7;border-color:#ddd;}
+    .field .name{color:#8a6d00;}
+    .toc{background:#f7f7f7;border-color:#ddd;}
+    .warn{background:#fff6e0;color:#6b5100;}
+    .tip{background:#e8f9fc;color:#00505c;}
+    a{color:#0645ad;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1><img class="icon" src="data:image/png;base64,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" alt="">GPX Flyover Video Generator</h1>
+  <div class="subtitle">Guida completa a tutti i campi e funzionalità — cosa fanno e cosa cambia quando li modifichi</div>
+
+  <div class="toc">
+    <b>Indice</b>
+    <ul>
+      <li><a href="#panoramica">Panoramica e flusso di lavoro</a></li>
+      <li><a href="#caricamento">Caricamento del GPX e multi-traccia</a></li>
+      <li><a href="#video">Impostazioni video (risoluzione, bitrate, durata, fps, formato)</a></li>
+      <li><a href="#camera">Impostazioni camera e preset</a></li>
+      <li><a href="#mappa">Stile mappa</a></li>
+      <li><a href="#veicolo">Mezzo, quota e statistiche in tempo reale</a></li>
+      <li><a href="#musica">Musica &amp; Foto</a></li>
+      <li><a href="#timeline">Timeline e scorciatoie da tastiera</a></li>
+      <li><a href="#player">Barra di riproduzione e intervallo di export</a></li>
+      <li><a href="#progetto">Salvare e ricaricare il progetto</a></li>
+      <li><a href="#pulsanti">I tre pulsanti principali</a></li>
+      <li><a href="#problemi">Problemi comuni</a></li>
+    </ul>
+  </div>
+
+  <h2 id="panoramica">Panoramica e flusso di lavoro</h2>
+  <p>Il tool trasforma una o più tracce GPX in un video con volo 3D animato sopra il percorso, in stile Relive/Strava, generato interamente nel browser (nessun servizio esterno, a parte le mappe di MapTiler).</p>
+  <ol class="steps">
+    <li>Carica il <b>File GPX</b> (e volendo altri file GPX come tracce aggiuntive) e premi <b>1. Carica traccia sulla mappa</b> — il percorso appare sulla mappa 3D con le statistiche del giro.</li>
+    <li>Regola i parametri (camera, mappa, mezzo, musica/foto) e premi <b>2. Anteprima</b> per vedere il risultato senza registrare — usa la barra di riproduzione in basso per controllare velocità, posizione e intervallo di export.</li>
+    <li>Quando sei soddisfatto, premi <b>3. Registra e genera video</b> — al termine trovi il video con link per scaricarlo.</li>
+  </ol>
+  <div class="tip">Puoi modificare quasi tutti i parametri <b>mentre l'anteprima è aperta</b> (anche in pausa): l'effetto si vede subito, senza dover ricaricare la traccia.</div>
+
+  <h2 id="caricamento">Caricamento del GPX e multi-traccia</h2>
+
+  <div class="field">
+    <div class="name">MapTiler API Key</div>
+    <div class="text">La chiave per scaricare mappe satellitari e dati del terreno 3D. Il campo arriva precompilato con una chiave dimostrativa funzionante — per un uso continuativo è consigliabile sostituirla con una chiave gratuita del tuo account MapTiler (cloud.maptiler.com → API Keys). Senza una chiave valida la mappa non si carica.</div>
+  </div>
+
+  <div class="field">
+    <div class="name">File GPX</div>
+    <div class="text">Il file della traccia da trasformare in video. Supporta file con più segmenti (vedi campo successivo) e tracce molto dense (oltre 40.000 punti vengono automaticamente ridotte per restare fluide, senza alterare percettibilmente la forma del percorso).</div>
+  </div>
+
+  <div class="field">
+    <div class="name">Segmenti multipli</div>
+    <div class="row">
+      <div class="col"><div class="label">Cosa fa</div><div class="text">Decide come comportarsi se il file GPX contiene più segmenti (<code>&lt;trkseg&gt;</code>).</div></div>
+      <div class="col"><div class="label">Effetto del cambiamento</div><div class="text">
+        <b>Solo il più lungo</b> <span class="default">default</span>: scarta gli altri segmenti — utile se il file unisce per errore più giorni/giri diversi.<br>
+        <b>Concatena tutti</b>: unisce tutti i segmenti in ordine — utile per registrazioni lunghe interrotte da pause GPS o riavvii del logger.
+      </div></div>
+    </div>
+  </div>
+
+  <div class="field">
+    <div class="name">Km/sec percepiti</div>
+    <div class="text">Non influisce sul video — serve solo a calcolare il <b>suggerimento di durata</b> che compare nelle statistiche dopo aver caricato il GPX. Default <span class="default">1.8</span>. Abbassalo per un suggerimento di ritmo più lento/leggibile, alzalo per un video più rapido.</div>
+  </div>
+
+  <div class="field">
+    <div class="name">Titolo del giro (facoltativo)</div>
+    <div class="text">Testo mostrato in sovraimpressione nell'angolo in alto a sinistra del video. Se lasciato vuoto, usa il nome del file GPX caricato.</div>
+  </div>
+
+  <div class="field">
+    <div class="name">Multi-traccia — "Aggiungi altra traccia"</div>
+    <div class="text">Dopo il primo caricamento il pulsante principale diventa <b>Aggiungi altra traccia</b>: puoi caricare più file GPX nello stesso progetto (es. più mezzi che percorrono lo stesso giro). Ogni traccia mostra un riquadro con nome file, distanza, dislivello, durata e un pulsante per rimuoverla (cestino). Una sola traccia è designata <b>principale</b> (radio button "principale") — è quella che guida la camera e la durata del video; le tracce secondarie vengono sincronizzate per orario GPX reale: se un istante non è coperto dal timestamp di una traccia secondaria, la sua icona semplicemente non compare in quel momento.</div>
+    <div class="warn">Se il GPX non contiene timestamp validi, la sincronizzazione multi-mezzo non è possibile e compare un avviso nelle statistiche.</div>
+  </div>
+
+  <h2 id="video">Impostazioni video</h2>
+
+  <div class="field">
+    <div class="name">Risoluzione video</div>
+    <div class="text">Dimensione in pixel del video registrato: 720p (più leggero), 1080p <span class="default">consigliato</span>, 1440p (più pesante ma più nitido). Non influisce sull'anteprima, solo sulla registrazione finale.</div>
+  </div>
+
+  <div class="field">
+    <div class="name">Bitrate (Mbps)</div>
+    <div class="text">Quanti dati al secondo usa la compressione video. Più alto = immagine più nitida ma file più pesante. <span class="default">8 Mbps</span> è un buon equilibrio per 1080p; scendi a 4-5 se devi condividere il file su WhatsApp/email.</div>
+  </div>
+
+  <div class="field">
+    <div class="name">Durata video (sec)</div>
+    <div class="text">Quanto dura il video finale, indipendentemente dalla lunghezza reale del percorso. Default <span class="default">30s</span> (range 5-600). <b>Attenzione:</b> percorsi molto lunghi compressi in pochi secondi risultano a un ritmo vertiginoso e poco leggibile — segui il suggerimento calcolato in base ai km/sec impostati sopra.</div>
+  </div>
+
+  <div class="field">
+    <div class="name">FPS</div>
+    <div class="text">Fotogrammi al secondo del video. <span class="default">30</span> è lo standard per contenuti da condividere; 60 dà un movimento più fluido ma raddoppia il peso del file e il tempo di elaborazione.</div>
+  </div>
+
+  <div class="field">
+    <div class="name">Formato (aspect ratio)</div>
+    <div class="text"><b>16:9</b> <span class="default">standard, default</span>, <b>9:16</b> (storie/reel), <b>1:1</b> (quadrato). La scena viene sempre composta come per il 16:9 e poi ritagliata al centro per gli altri formati — su 9:16/1:1 si perde quindi parte dell'inquadratura sui lati (compare un avviso quando selezioni un formato diverso da 16:9).</div>
+  </div>
+
+  <div class="field">
+    <div class="name">Mostra sagoma profilo altimetrico</div>
+    <div class="text">Checkbox, default <span class="default">attivo</span>. Mostra in alto a destra nel video la sagoma del profilo altimetrico del percorso, come riferimento visivo di salite/discese.</div>
+  </div>
+
+  <h2 id="camera">Impostazioni camera</h2>
+
+  <div class="field">
+    <div class="name">Preset</div>
+    <div class="text">Menu a tendina con combinazioni pronte dei quattro parametri sotto: <b>Cinematico</b> (pitch 66°, zoom 12.5, ampiezza 25°, periodo 14s — il più simile allo stile Relive), <b>Dall'alto</b> (vista quasi verticale, poca oscillazione), <b>Inseguimento ravvicinato</b> (zoom alto, oscillazione rapida), <b>Panoramica ampia</b> (zoom basso, oscillazione ampia e lenta), <b>Statico</b> (nessuna rotazione panoramica). Scegliere un preset compila i campi sotto; modificarli poi a mano non toglie la spunta al preset scelto.</div>
+  </div>
+
+  <div class="field">
+    <div class="name">Pitch (°)</div>
+    <div class="text">Inclinazione della camera rispetto alla verticale. Default <span class="default">66°</span> (range 0-85). 0° = vista dall'alto (mappa piatta); valori alti avvicinano la visuale all'orizzonte, mostrando più skyline e montagne sullo sfondo ma meno "vista dall'alto" del percorso.</div>
+  </div>
+
+  <div class="field">
+    <div class="name">Zoom</div>
+    <div class="text">Quanto la camera è vicina al terreno. Default <span class="default">12.5</span> (range 8-18). Valori bassi = vista panoramica ampia, molto leggibile ma con meno dettagli/nomi di località; valori alti = vista ravvicinata, più dettagliata ma "vertiginosa" su percorsi lunghi e più sensibile a immagini satellitari a bassa risoluzione (zone rurali/montane).</div>
+  </div>
+
+  <div class="field">
+    <div class="name">Ampiezza rotazione (°)</div>
+    <div class="text">Quanto la camera oscilla lateralmente rispetto alla direzione di marcia, per mostrare il paesaggio circostante invece di restare fissa sulla strada. Default <span class="default">25°</span> (range 0-60). <code>0</code> disattiva l'effetto (camera sempre dritta lungo il percorso).</div>
+  </div>
+
+  <div class="field">
+    <div class="name">Periodo rotazione (s)</div>
+    <div class="text">Quanto dura un ciclo completo di oscillazione panoramica. Default <span class="default">14s</span> (range 4-60). Numeri più alti = movimento più lento e cinematico; numeri bassi = la camera "sventaglia" più rapidamente.</div>
+  </div>
+
+  <h2 id="mappa">Stile mappa</h2>
+
+  <div class="field">
+    <div class="name">Stile mappa</div>
+    <div class="text">Il tipo di mappa di base: <b>Satellite Hybrid</b> (satellite + nomi strade/località, il più simile ai video tipo Relive), <b>Satellite Plain</b> (solo satellite, nessuna etichetta), <b>Outdoor</b> (mappa topografica), <b>Winter</b> (variante invernale).</div>
+    <div class="warn">Il cambio di stile <b>non è in tempo reale</b>: si applica solo al prossimo click su "1. Carica traccia sulla mappa".</div>
+  </div>
+
+  <div class="field">
+    <div class="name">URL stile personalizzato</div>
+    <div class="text">Campo di riserva: se uno degli stili sopra non si carica correttamente, incolla qui l'URL completo dello <code>style.json</code> (lo trovi nella pagina dello stile scelto su MapTiler, sezione "Use vector style"). Se compilato, ha la priorità sulla scelta del menu a tendina.</div>
+  </div>
+
+  <h2 id="veicolo">Mezzo, quota e statistiche in tempo reale</h2>
+  <p>Se sono caricate più tracce, un selettore <b>Traccia</b> in cima al pannello sceglie quale mezzo stai configurando.</p>
+
+  <div class="field">
+    <div class="name">Icona mezzo</div>
+    <div class="text">Simbolo mostrato sulla traccia per rappresentare il mezzo: Moto 🏍️ <span class="default">default</span>, Macchina 🚗, Elicottero 🚁, Aereo ✈️, Nave 🚢, Nessuna (solo percorso).</div>
+  </div>
+
+  <div class="field">
+    <div class="name">Colore icona / Colore percorso</div>
+    <div class="text">Colore del cerchio dietro l'icona (default <span class="default">#00e5ff</span> ciano), scelto per essere ben distinguibile dal percorso. Se l'icona è impostata su "Nessuna", questo campo diventa <b>Colore percorso</b> (il colore della linea del tracciato stesso, assegnato automaticamente da una palette se non lo imposti).</div>
+  </div>
+
+  <div class="field">
+    <div class="name">Stile icona</div>
+    <div class="text">Solo se l'icona non è "Nessuna": <b>Cerchio pieno + simbolo</b> <span class="default">default</span>, <b>Solo simbolo</b> (nessun cerchio), <b>Solo punto colorato</b>.</div>
+  </div>
+
+  <div class="field">
+    <div class="name">Dimensione icona</div>
+    <div class="text">Scala dell'icona sul video. Default <span class="default">0.55</span> (range 0.2-2).</div>
+  </div>
+
+  <div class="field">
+    <div class="name">Icona in quota reale</div>
+    <div class="row">
+      <div class="col"><div class="label">Cosa fa</div><div class="text">Checkbox, default <b>OFF</b>. Se attivo, l'icona si solleva visivamente sopra la strada in proporzione alla quota reale della traccia. Se disattivo, l'icona resta sempre "sulla strada".</div></div>
+      <div class="col"><div class="label">Quando usarlo</div><div class="text">
+        <b>Attiva</b> per tracce aeree: elicottero, aereo.<br>
+        <b>Disattiva</b> per percorsi a terra: moto, auto (altrimenti l'icona "galleggia" sopra le salite in modo innaturale).
+      </div></div>
+    </div>
+  </div>
+
+  <div class="field">
+    <div class="name">Esagerazione quota icona</div>
+    <div class="text">Default <span class="default">8</span> (range 1-40). A zoom panoramico ogni pixel schermo corrisponde a decine di metri reali: un dislivello di poche centinaia di metri sposterebbe l'icona di pochi pixel, quasi invisibile. Questo valore <b>amplifica</b> l'effetto per renderlo leggibile — <b>non è una misura fisica esatta</b>, è una resa visiva. Alza il valore se non vedi l'icona sollevarsi a sufficienza.</div>
+  </div>
+
+  <div class="field">
+    <div class="name">Mostra dati in tempo reale (velocità/quota/posizione)</div>
+    <div class="text">Checkbox, default <b>OFF</b>. Se attivo, in anteprima/registrazione compare un riquadro con: nome traccia, velocità (km/h, "n/d" se il GPX non ha timestamp), rotta (gradi + punto cardinale), quota (m), <b>Ora GMT</b> (dal timestamp originale del GPX, indipendente dalla velocità di riproduzione), coordinate in gradi/primi/secondi. Compare anche <b>Dimensione riquadro dati</b> (default 1, range 0.5-2). Ogni traccia caricata ha un riquadro indipendente, e in anteprima il riquadro è <b>trascinabile</b> direttamente sulla mappa per riposizionarlo.</div>
+  </div>
+
+  <h2 id="musica">Musica &amp; Foto</h2>
+
+  <div class="field">
+    <div class="name">Musica di sottofondo</div>
+    <div class="text">Carica uno o più file audio dalla sidebar, oppure con il pulsante "+" direttamente sulla corsia Musica della timeline (si posiziona al punto di riproduzione attuale). <b>Volume musica</b>: slider 0-100%, default <span class="default">60%</span>.</div>
+  </div>
+
+  <div class="field">
+    <div class="name">Foto nella timeline</div>
+    <div class="text">Carica una o più immagini dalla sidebar, con il pulsante "+" sulla corsia Foto, oppure trascinandole direttamente sulla corsia. <b>Durata visualizzazione foto (default, sec)</b>: si applica alle nuove foto aggiunte, default <span class="default">3s</span> (range 0.5-15). Mentre una foto è a schermo, il volo/la mappa si <b>congela</b> (il percorso non avanza).</div>
+  </div>
+
+  <div class="tip">Le clip audio e foto si spostano e si ritagliano trascinandole direttamente nella timeline sotto la mappa, visibile durante l'anteprima — vedi la sezione successiva.</div>
+
+  <h2 id="timeline">Timeline e scorciatoie da tastiera</h2>
+  <p>La timeline compare sotto la mappa durante l'anteprima, con una corsia per Musica, una per Foto e una per Testo.</p>
+
+  <table>
+    <tr><th>Corsia</th><th>Comportamento</th></tr>
+    <tr><td><span class="dot" style="background:#14b8a6"></span> Musica</td><td>Blocchi trascinabili (sposta/taglia i bordi). Selezionando un blocco: Muto, <b>Solo</b> (silenzia tutti gli altri brani), volume del singolo brano, <b>Taglia al playhead</b> (split in due), <b>Duplica</b>.</td></tr>
+    <tr><td><span class="dot" style="background:#c084fc"></span> Foto</td><td>Blocchi con miniatura, trascinabili/ritagliabili; pulsante <b>Ruota di 90°</b> sul blocco; stesso inspector (Taglia al playhead, Duplica).</td></tr>
+    <tr><td><span class="dot" style="background:#ffcc00"></span> Testo</td><td>Il pulsante "+" crea un overlay di testo (3s di default) al playhead; il contenuto si scrive nel campo dell'inspector una volta selezionato il blocco; posizione trascinabile direttamente sull'anteprima come il riquadro statistiche live.</td></tr>
+  </table>
+
+  <div class="field">
+    <div class="name">Calamita / snap e zoom timeline</div>
+    <div class="text">L'interruttore <b>calamita</b> (default attivo) fa agganciare i blocchi trascinati ai bordi di altri blocchi, all'inizio/fine della timeline e al playhead. I pulsanti <b>Zoom -/+</b> e <b>Adatta alla finestra</b> regolano l'ingrandimento orizzontale della timeline (percentuale mostrata, es. "Zoom 1.0x").</div>
+  </div>
+
+  <table>
+    <tr><th>Tasto</th><th>Effetto</th></tr>
+    <tr><td><kbd>Spazio</kbd></td><td>Play / pausa dell'anteprima</td></tr>
+    <tr><td><kbd>←</kbd> / <kbd>→</kbd></td><td>Un fotogramma indietro / avanti</td></tr>
+    <tr><td><kbd>Canc</kbd> / <kbd>Backspace</kbd></td><td>Rimuove il blocco (musica/foto/testo) attualmente selezionato nella timeline</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>Annulla l'ultima modifica</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Y</kbd> o <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></td><td>Ripeti</td></tr>
+  </table>
+  <div class="tip">Le stesse azioni di Annulla/Ripeti sono disponibili anche come pulsanti in fondo alla barra laterale. Coprono musica, foto, testo e parametri — non il caricamento del file GPX.</div>
+  <div class="warn">Le scorciatoie da tastiera sono disattive quando il focus è su un campo di testo (per non interferire mentre scrivi).</div>
+
+  <h2 id="player">Barra di riproduzione e intervallo di export</h2>
+  <table>
+    <tr><th>Controllo</th><th>Funzione</th></tr>
+    <tr><td>⏪ / ⏩</td><td>Salta indietro/avanti di 5 secondi</td></tr>
+    <tr><td>⏸ / ▶️</td><td>Metti in pausa o riprendi la riproduzione dell'anteprima</td></tr>
+    <tr><td>Barra di scorrimento</td><td>Trascina per saltare a qualunque punto del percorso; un tooltip mostra l'orario al passaggio del mouse</td></tr>
+    <tr><td>x0.5 / x1 / x1.5 / x2</td><td>Velocità di riproduzione dell'anteprima (non incide sulla registrazione, che segue sempre la Durata impostata)</td></tr>
+  </table>
+
+  <div class="field">
+    <div class="name">Selezione intervallo di export</div>
+    <div class="text">Due maniglie trascinabili (inizio/fine) sovrapposte alla barra di scorrimento: le zone escluse appaiono oscurate. Permettono di registrare solo una parte del volo invece dell'intero percorso. Doppio click su una maniglia azzera quel lato. Non influisce sull'anteprima interattiva, solo su cosa viene effettivamente registrato al passo 3 — sotto i pulsanti principali compare una nota tipo <i>"Verrà registrato x1.5, intervallo 5.0s–20.0s → durata effettiva video: Xs"</i> quando la velocità è diversa da x1 e/o l'intervallo è stato ritagliato.</div>
+  </div>
+  <div class="tip">La barra compare solo dopo aver premuto "2. Anteprima" ed è sovrapposta in basso alla mappa.</div>
+
+  <h2 id="progetto">Salvare e ricaricare il progetto</h2>
+  <div class="field">
+    <div class="name">Salva progetto (.json)</div>
+    <div class="text">Scarica un file <code>&lt;titolo&gt;.flyover.json</code> con tutte le impostazioni (camera, mappa, mezzo, musica/foto/testo posizionati, intervallo di export...). <b>Non include</b> il file GPX né i file audio/foto originali — vanno ricaricati a mano.</div>
+  </div>
+  <div class="field">
+    <div class="name">Carica progetto (.json)</div>
+    <div class="text">Ripristina le impostazioni salvate. Al termine un messaggio di stato elenca cosa va ricaricato manualmente (tracce GPX con relative impostazioni Mezzo da riconfigurare, brani musicali da riaggiungere).</div>
+  </div>
+
+  <h2 id="pulsanti">I tre pulsanti principali</h2>
+  <table>
+    <tr><th>Pulsante</th><th>Cosa fa</th></tr>
+    <tr><td><b>1. Carica traccia sulla mappa</b> / <b>Aggiungi altra traccia</b></td><td>Legge il GPX, calcola le statistiche e disegna il percorso sulla mappa 3D. Va rifatto se cambi file, "Segmenti multipli" o "Stile mappa".</td></tr>
+    <tr><td><b>2. Anteprima</b></td><td>Avvia la simulazione del volo camera <i>senza registrare</i>, con la barra di riproduzione e la timeline per controllarla. Utile per tarare i parametri prima di registrare.</td></tr>
+    <tr><td><b>3. Registra e genera video</b></td><td>Esegue il volo (o l'intervallo selezionato) in modo deterministico e produce il file scaricabile al termine. Mostra una barra di progresso con pulsante <b>Annulla</b>. Se il browser non supporta la codifica ottimizzata (WebCodecs), passa automaticamente a una registrazione in tempo reale più lenta, con avviso esplicito a schermo — nessuna azione richiesta, funziona comunque.</td></tr>
+  </table>
+
+  <h2 id="problemi">Problemi comuni</h2>
+  <table>
+    <tr><th>Sintomo</th><th>Causa probabile / soluzione</th></tr>
+    <tr><td>La mappa resta nera dopo il caricamento</td><td>Controlla il messaggio nella sezione di stato: spesso è la API Key mancante/errata o uno stile mappa non disponibile (prova il campo "URL stile personalizzato").</td></tr>
+    <tr><td>Il video pesa troppo per essere condiviso</td><td>Abbassa Risoluzione/Bitrate, oppure converti il .webm in .mp4 compresso con: <code>ffmpeg -i giro_flyover.webm -c:v libx264 -crf 26 -preset fast -pix_fmt yuv420p giro_flyover.mp4</code></td></tr>
+    <tr><td>Il movimento è troppo veloce/illeggibile</td><td>Aumenta la Durata video seguendo il suggerimento calcolato in base ai "Km percepiti al secondo".</td></tr>
+    <tr><td>Non vedo il profilo altimetrico / l'icona non si solleva</td><td>Il GPX probabilmente non contiene dati di quota validi (tag <code>&lt;ele&gt;</code> assente) — controlla l'eventuale avviso nelle statistiche dopo il caricamento. Se l'icona si solleva ma troppo poco, alza "Esagerazione quota icona".</td></tr>
+    <tr><td>La velocità nel riquadro statistiche mostra "n/d"</td><td>Il GPX non contiene timestamp validi in quel tratto — la quota/posizione restano comunque corrette.</td></tr>
+    <tr><td>Il browser mostra un avviso sulla codifica video</td><td>Normale su browser senza supporto WebCodecs: la registrazione passa a una modalità in tempo reale più lenta ma funzionante.</td></tr>
+  </table>
+
+</div>
+</body>
+</html>

@@ -130,6 +130,46 @@
   margin-top: 10px;
   line-height: 1.5;
 }
+.sidebar .gpx-track-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.sidebar .gpx-track-row {
+  position: relative;
+  font-size: 12px;
+  background: var(--code-bg);
+  border: 1px solid transparent;
+  padding: 8px 32px 8px 8px;
+  border-radius: 6px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.sidebar .gpx-track-row--selected {
+  border-color: var(--accent, #8a5cff);
+}
+.sidebar .gpx-track-row__primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: normal;
+  font-size: 11px;
+  cursor: pointer;
+}
+.sidebar .gpx-track-row__remove {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-h);
+  cursor: pointer;
+  padding: 2px;
+}
+.sidebar .gpx-track-row__remove:hover {
+  color: #ff8080;
+}
 .sidebar .stats-warn,
 .sidebar .stats-info,
 .sidebar .stats-tip,

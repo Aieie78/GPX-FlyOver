@@ -4,6 +4,7 @@ import { nextMusicId } from '../audio/musicEngine';
 import { nextPhotoId } from '../photos/photoEngine';
 import { nextTextId } from '../text/textEngine';
 import { nextTrackId } from '../gpx/parseGpx';
+import { effectiveRouteColor, pickRouteColor } from '../vehicle/routeColor';
 import type {
   CameraParams,
   MapParams,
@@ -33,13 +34,17 @@ export function getEffectiveVehicle(state: ProjectState): VehicleParams {
 }
 
 interface ProjectActions {
-  setTrack: (fileName: string, track: Track) => void;
+  addTrack: (fileName: string, track: Track) => number;
+  removeTrack: (id: number) => void;
+  setPrimaryTrack: (id: number) => void;
   setSegmentMode: (mode: SegmentMode) => void;
   setTitle: (title: string) => void;
   updateVideo: (patch: Partial<VideoParams>) => void;
   updateCamera: (patch: Partial<CameraParams>) => void;
   updateMap: (patch: Partial<MapParams>) => void;
-  updateVehicle: (patch: Partial<VehicleParams>) => void;
+  // trackId null aggiorna pendingVehicle (nessuna traccia caricata ancora); altrimenti aggiorna
+  // le impostazioni Mezzo di quella specifica traccia.
+  updateVehicle: (trackId: number | null, patch: Partial<VehicleParams>) => void;
   setMusicVolume: (volume: number) => void;
   addMusicTrack: (track: MusicTrack) => void;
   updateMusicTrack: (id: number, patch: Partial<MusicTrack>) => void;
@@ -65,11 +70,17 @@ type ProjectStore = ProjectState & ProjectActions;
 const defaultVehicle: VehicleParams = {
   icon: '🏍️',
   color: '#00e5ff',
+  routeColor: '',
   iconStyle: 'filled',
   size: 0.55,
   use3DAltitude: false,
   altExaggeration: 8,
   showLiveStats: false,
+  // Riproduce esattamente la posizione fissa basso-destra usata prima della Fase 5.3-bis, su un
+  // canvas 16:9 di riferimento — chi non tocca nulla vede lo stesso risultato di sempre.
+  liveStatsX: 0.923,
+  liveStatsY: 0.93,
+  liveStatsScale: 1,
 };
 
 const initialState: ProjectState = {
@@ -108,34 +119,60 @@ export const useProjectStore = create<ProjectStore>()(
   temporal(
     (set) => ({
       ...initialState,
-      // Sostituisce la traccia principale (unica, in questa fase): se ne esiste già una, ne
-      // aggiorna solo file/dati GPX mantenendo le impostazioni Mezzo già configurate (come oggi);
-      // altrimenti ne crea una nuova, inizializzata dai default in pendingVehicle.
-      setTrack: (fileName, track) =>
+      // Aggiunge una nuova traccia. Se è la prima del progetto, diventa principale ed eredita i
+      // default da pendingVehicle (comportamento Fase 5.1 invariato); altrimenti è una traccia
+      // secondaria con impostazioni Mezzo di default (Fase 5.2 — gestione multi-traccia).
+      addTrack: (fileName, track) => {
+        const id = nextTrackId();
         set((s) => {
-          const existing = getPrimaryTrack(s);
-          if (existing) {
-            return {
-              tracks: s.tracks.map((t) => (t.id === existing.id ? { ...t, fileName, track } : t)),
-            };
-          }
+          const isFirst = s.tracks.length === 0;
+          const vehicle = isFirst ? { ...s.pendingVehicle } : { ...defaultVehicle };
           return {
-            tracks: [{ id: nextTrackId(), fileName, track, vehicle: { ...s.pendingVehicle }, isPrimary: true }],
+            tracks: [...s.tracks, { id, fileName, track, vehicle, isPrimary: isFirst }],
           };
+        });
+        return id;
+      },
+      // Rimuove una traccia; se era la principale e ne restano altre, promuove la prima rimasta.
+      removeTrack: (id) =>
+        set((s) => {
+          const wasPrimary = s.tracks.find((t) => t.id === id)?.isPrimary ?? false;
+          const remaining = s.tracks.filter((t) => t.id !== id);
+          if (wasPrimary && remaining.length > 0) {
+            remaining[0] = { ...remaining[0], isPrimary: true };
+          }
+          return { tracks: remaining };
         }),
+      setPrimaryTrack: (id) =>
+        set((s) => ({
+          tracks: s.tracks.map((t) => (t.id === id ? { ...t, isPrimary: true } : { ...t, isPrimary: false })),
+        })),
       setSegmentMode: (segmentMode) => set({ segmentMode }),
       setTitle: (title) => set({ title }),
       updateVideo: (patch) => set((s) => ({ video: { ...s.video, ...patch } })),
       updateCamera: (patch) => set((s) => ({ camera: { ...s.camera, ...patch } })),
       updateMap: (patch) => set((s) => ({ map: { ...s.map, ...patch } })),
-      // Prima che una traccia sia caricata modifica i default (pendingVehicle); una volta
-      // caricata una traccia principale, modifica le sue impostazioni Mezzo.
-      updateVehicle: (patch) =>
+      // trackId null: nessuna traccia caricata ancora, modifica i default (pendingVehicle).
+      // trackId dato: modifica le impostazioni Mezzo di quella specifica traccia.
+      updateVehicle: (trackId, patch) =>
         set((s) => {
-          const primary = getPrimaryTrack(s);
-          if (!primary) return { pendingVehicle: { ...s.pendingVehicle, ...patch } };
+          if (trackId == null) return { pendingVehicle: { ...s.pendingVehicle, ...patch } };
           return {
-            tracks: s.tracks.map((t) => (t.id === primary.id ? { ...t, vehicle: { ...t.vehicle, ...patch } } : t)),
+            tracks: s.tracks.map((t) => {
+              if (t.id !== trackId) return t;
+              // Passaggio a icona "nessuna" senza un colore percorso già personalizzato: assegna
+              // automaticamente il primo colore della palette non ancora usato dalle altre
+              // tracce (spec: evitare duplicati con le altre tracce/il giallo della principale).
+              let effectivePatch = patch;
+              if (patch.icon === 'none' && patch.routeColor === undefined && !t.vehicle.routeColor) {
+                const usedColors = s.tracks
+                  .filter((other) => other.id !== trackId)
+                  .map((other) => effectiveRouteColor(other, s.tracks.length));
+                usedColors.push('#ffcc00');
+                effectivePatch = { ...patch, routeColor: pickRouteColor(usedColors) };
+              }
+              return { ...t, vehicle: { ...t.vehicle, ...effectivePatch } };
+            }),
           };
         }),
       setMusicVolume: (musicVolume) => set({ musicVolume }),

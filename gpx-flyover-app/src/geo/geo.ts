@@ -1,4 +1,4 @@
-import type { PathPoint, Track } from '../types/domain';
+import type { PathPoint, Track, TrackPoint } from '../types/domain';
 
 // Port 1:1 da gpx-flyover.html:381
 export function haversine(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
@@ -78,4 +78,69 @@ export function resamplePath(track: Track, nFrames: number): PathPoint[] {
     });
   }
   return out;
+}
+
+// Sottoinsieme dei punti di una traccia che hanno un timestamp <time> valido, in ordine — usato
+// da findPointAtTime per la sincronizzazione multi-mezzo (Fase 5.3). Costruito una volta per
+// traccia per sessione di anteprima/export, non per frame: rifiltrare ad ogni chiamata sarebbe
+// costoso su tracce con decine di migliaia di punti.
+export interface TimeIndexedTrack {
+  pts: TrackPoint[];
+}
+
+export function buildTimeIndex(track: Track): TimeIndexedTrack {
+  return { pts: track.pts.filter((p) => p.time != null) };
+}
+
+// Trova il punto interpolato di una traccia secondaria al timestamp reale targetTimeMs (epoch
+// ms), per la sincronizzazione multi-mezzo per orario GPX reale (non per distanza/tempo-video).
+// Ricerca binaria sullo stesso schema di resamplePath, ma su pts[i].time invece che su cum.
+// Ritorna null se targetTimeMs cade prima del primo o dopo l'ultimo punto con time valido (la
+// traccia non copre quell'istante) — il chiamante non disegna l'icona per quel frame, come
+// richiesto dalla spec (nessun errore, nessuna posizione inventata).
+export interface TimedPoint {
+  lat: number;
+  lon: number;
+  ele: number;
+  speedKmh: number | null;
+  headingDeg: number;
+  idx: number;
+}
+
+export function findPointAtTime(index: TimeIndexedTrack, targetTimeMs: number): TimedPoint | null {
+  const { pts } = index;
+  if (pts.length === 0) return null;
+  const firstMs = pts[0].time!.getTime();
+  const lastMs = pts[pts.length - 1].time!.getTime();
+  if (targetTimeMs < firstMs || targetTimeMs > lastMs) return null;
+
+  let lo = 0;
+  let hi = pts.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (pts[mid].time!.getTime() < targetTimeMs) lo = mid + 1;
+    else hi = mid;
+  }
+  const idx = Math.max(1, lo);
+  const p0 = pts[idx - 1];
+  const p1 = pts[idx];
+  const t0 = p0.time!.getTime();
+  const t1 = p1.time!.getTime();
+  const t = t1 > t0 ? (targetTimeMs - t0) / (t1 - t0) : 0;
+
+  // Velocità/rotta reali del tratto p0→p1 — stesso calcolo di resamplePath, per il riquadro
+  // "dati in tempo reale" di una traccia secondaria (Fase 5.3-bis).
+  const distM = haversine(p0, p1);
+  const dtSec = (t1 - t0) / 1000;
+  const speedKmh = dtSec > 0 ? (distM / dtSec) * 3.6 : null;
+  const headingDeg = distM > 0 ? bearingBetween(p0, p1) : 0;
+
+  return {
+    lat: p0.lat + (p1.lat - p0.lat) * t,
+    lon: p0.lon + (p1.lon - p0.lon) * t,
+    ele: p0.ele + (p1.ele - p0.ele) * t,
+    speedKmh,
+    headingDeg,
+    idx,
+  };
 }

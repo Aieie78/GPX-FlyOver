@@ -2,6 +2,7 @@ import type { Map as MapLibreMap } from 'maplibre-gl';
 import { buildAnimParams, cameraForFrame, initialBearing, stepBearing } from '../camera/camera';
 import { resetMusicAnchor, stopMusicPreview, syncMusicPreview } from '../audio/musicEngine';
 import { updateRouteDoneUpTo } from '../map/mapSetup';
+import { buildTimeIndex, findPointAtTime, type TimedPoint, type TimeIndexedTrack } from '../geo/geo';
 import { computePathIndex } from '../timeline/timelineMath';
 import { drawAltitudeLine, drawVehicleIcon, vehicleScreenPos } from '../vehicle/vehicleIcon';
 import { drawPhotoCover, getActivePhotoLayers } from '../photos/photoEngine';
@@ -14,8 +15,7 @@ import type {
   PhotoClip,
   PlaybackSpeed,
   TextOverlay,
-  Track,
-  VehicleParams,
+  VehicleTrack,
   VideoParams,
 } from '../types/domain';
 
@@ -31,10 +31,9 @@ export interface PreviewTickInfo {
 export interface PreviewEngineDeps {
   map: MapLibreMap;
   overlayCanvas: HTMLCanvasElement;
-  getTrack: () => Track;
+  getTracks: () => VehicleTrack[];
   getVideoParams: () => VideoParams;
   getCameraParams: () => CameraParams;
-  getVehicleParams: () => VehicleParams;
   getTitle: () => string;
   getMusicTracks: () => MusicTrack[];
   getPhotoClips: () => PhotoClip[];
@@ -43,9 +42,20 @@ export interface PreviewEngineDeps {
   onEnded: () => void;
 }
 
+// Traccia secondaria pre-indicizzata per la ricerca per timestamp (Fase 5.3) — costruita una
+// volta per sessione di anteprima (in buildSecondaries), non per frame. Si tiene solo l'id (non
+// l'intero VehicleTrack) perché le impostazioni Mezzo vanno rilette dal vivo ad ogni frame per
+// restare "live" durante l'anteprima, come per la principale.
+interface SecondaryTrackIndex {
+  trackId: number;
+  timeIndex: TimeIndexedTrack;
+}
+
 interface PreviewState extends AnimParams {
   i: number;
   pathIndex: number;
+  primaryTrackId: number;
+  secondaries: SecondaryTrackIndex[];
   smoothBearing: number;
   playing: boolean;
   speed: PlaybackSpeed;
@@ -76,7 +86,17 @@ export class PreviewEngine {
   start(): void {
     this.stop();
     const p = this.buildParams();
-    this.state = { ...p, i: 0, pathIndex: 0, smoothBearing: initialBearing(p), playing: true, speed: 1, lastTs: null };
+    this.state = {
+      ...p,
+      i: 0,
+      pathIndex: 0,
+      primaryTrackId: this.getPrimaryId(),
+      secondaries: this.buildSecondaries(),
+      smoothBearing: initialBearing(p),
+      playing: true,
+      speed: 1,
+      lastTs: null,
+    };
     resetMusicAnchor(0);
     this.renderFrame(0);
     this.rafHandle = requestAnimationFrame(this.loop);
@@ -159,6 +179,8 @@ export class PreviewEngine {
       ...p,
       i: newI,
       pathIndex: newPathIndex,
+      primaryTrackId: this.getPrimaryId(),
+      secondaries: this.buildSecondaries(),
       smoothBearing: sb,
       playing: wasPlaying,
       speed: prevSpeed,
@@ -174,9 +196,28 @@ export class PreviewEngine {
     if (this.state) this.renderFrame(this.state.i);
   }
 
+  private getPrimary(): VehicleTrack {
+    const primary = this.deps.getTracks().find((t) => t.isPrimary);
+    if (!primary) throw new Error('Nessuna traccia principale caricata');
+    return primary;
+  }
+
+  private getPrimaryId(): number {
+    return this.getPrimary().id;
+  }
+
+  // Pre-indicizza le tracce secondarie per la ricerca per timestamp — una volta per sessione di
+  // anteprima (start/onParamsChanged), non per frame (vedi SecondaryTrackIndex).
+  private buildSecondaries(): SecondaryTrackIndex[] {
+    return this.deps
+      .getTracks()
+      .filter((t) => !t.isPrimary)
+      .map((t) => ({ trackId: t.id, timeIndex: buildTimeIndex(t.track) }));
+  }
+
   private buildParams(): AnimParams {
     return buildAnimParams(
-      this.deps.getTrack(),
+      this.getPrimary().track,
       this.deps.getVideoParams(),
       this.deps.getCameraParams(),
       this.deps.getTitle(),
@@ -217,7 +258,30 @@ export class PreviewEngine {
     const pathIndex = s.pathIndex;
 
     map.jumpTo(cameraForFrame(s, pathIndex, s.smoothBearing));
-    updateRouteDoneUpTo(map, s.path, pathIndex);
+    updateRouteDoneUpTo(
+      map,
+      s.path.slice(0, pathIndex + 1).map((pt) => [pt.lon, pt.lat]),
+      String(s.primaryTrackId),
+    );
+
+    // Sincronizzazione multi-mezzo per orario GPX reale (Fase 5.3): il timestamp reale al frame
+    // corrente viene dalla principale (clockTimeMs, già interpolato da resamplePath); per ogni
+    // secondaria si cerca il punto a quello stesso istante — se fuori dal range coperto dalla
+    // traccia (o se la principale non ha timestamp validi per questo frame), l'icona di quella
+    // traccia semplicemente non compare (point null), nessun errore.
+    const targetTimeMs = s.path[pathIndex].clockTimeMs;
+    const secondaryPositions = s.secondaries.map((sec) => {
+      const point = targetTimeMs != null ? findPointAtTime(sec.timeIndex, targetTimeMs) : null;
+      if (point) {
+        const coords: Array<[number, number]> = sec.timeIndex.pts
+          .slice(0, point.idx)
+          .map((p) => [p.lon, p.lat] as [number, number]);
+        coords.push([point.lon, point.lat]);
+        updateRouteDoneUpTo(map, coords, String(sec.trackId));
+      }
+      return { trackId: sec.trackId, point };
+    });
+
     syncMusicPreview(this.deps.getMusicTracks(), s.playing);
 
     // Con il terreno 3D attivo, la proiezione schermo di un punto (map.project, usata da
@@ -229,14 +293,20 @@ export class PreviewEngine {
     if (this.drawHandle != null) cancelAnimationFrame(this.drawHandle);
     this.drawHandle = requestAnimationFrame(() => {
       this.drawHandle = null;
-      this.drawOverlay(i, s, pathIndex);
+      this.drawOverlay(i, s, pathIndex, secondaryPositions, targetTimeMs);
     });
   }
 
-  private drawOverlay(i: number, s: PreviewState, pathIndex: number): void {
+  private drawOverlay(
+    i: number,
+    s: PreviewState,
+    pathIndex: number,
+    secondaryPositions: Array<{ trackId: number; point: TimedPoint | null }>,
+    targetTimeMs: number | null,
+  ): void {
     const { map, overlayCanvas } = this.deps;
-    const track = this.deps.getTrack();
-    const vehicle = this.deps.getVehicleParams();
+    const tracks = this.deps.getTracks();
+    const primary = tracks.find((t) => t.isPrimary)!;
 
     // ridimensiona l'overlay se necessario e disegna l'icona del mezzo
     const rect = map.getContainer().getBoundingClientRect();
@@ -245,9 +315,20 @@ export class PreviewEngine {
       overlayCanvas.height = rect.height;
     }
     this.overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-    const pos = vehicleScreenPos(map, s.path[pathIndex], s.zoom, s.pitch, track.minEle, vehicle);
-    drawAltitudeLine(this.overlayCtx, pos.groundX, pos.groundY, pos.x, pos.y, vehicle.color, 1);
-    drawVehicleIcon(this.overlayCtx, pos.x, pos.y, 1, vehicle);
+    if (primary.vehicle.icon !== 'none') {
+      const pos = vehicleScreenPos(map, s.path[pathIndex], s.zoom, s.pitch, primary.track.minEle, primary.vehicle);
+      drawAltitudeLine(this.overlayCtx, pos.groundX, pos.groundY, pos.x, pos.y, primary.vehicle.color, 1);
+      drawVehicleIcon(this.overlayCtx, pos.x, pos.y, 1, primary.vehicle);
+    }
+
+    for (const { trackId, point } of secondaryPositions) {
+      if (!point) continue;
+      const secTrack = tracks.find((t) => t.id === trackId);
+      if (!secTrack || secTrack.vehicle.icon === 'none') continue;
+      const secPos = vehicleScreenPos(map, point, s.zoom, s.pitch, secTrack.track.minEle, secTrack.vehicle);
+      drawAltitudeLine(this.overlayCtx, secPos.groundX, secPos.groundY, secPos.x, secPos.y, secTrack.vehicle.color, 1);
+      drawVehicleIcon(this.overlayCtx, secPos.x, secPos.y, 1, secTrack.vehicle);
+    }
 
     const activeLayers = getActivePhotoLayers(this.deps.getPhotoClips(), i / s.fps);
     for (const layer of activeLayers) {
@@ -274,8 +355,37 @@ export class PreviewEngine {
       );
     }
 
-    if (vehicle.showLiveStats) {
-      drawLiveStatsBox(this.overlayCtx, overlayCanvas.width, overlayCanvas.height, s.path[pathIndex]);
+    // Un riquadro "dati in tempo reale" per ciascuna traccia con la checkbox attiva (principale
+    // e/o secondarie) — posizione/scala indipendenti (Fase 5.3-bis).
+    if (primary.vehicle.showLiveStats) {
+      const cur = s.path[pathIndex];
+      drawLiveStatsBox(
+        this.overlayCtx,
+        overlayCanvas.width,
+        overlayCanvas.height,
+        cur,
+        primary.fileName,
+        primary.vehicle.color,
+        primary.vehicle.liveStatsX,
+        primary.vehicle.liveStatsY,
+        primary.vehicle.liveStatsScale,
+      );
+    }
+    for (const { trackId, point } of secondaryPositions) {
+      if (!point) continue;
+      const secTrack = tracks.find((t) => t.id === trackId);
+      if (!secTrack || !secTrack.vehicle.showLiveStats) continue;
+      drawLiveStatsBox(
+        this.overlayCtx,
+        overlayCanvas.width,
+        overlayCanvas.height,
+        { ...point, clockTimeMs: targetTimeMs },
+        secTrack.fileName,
+        secTrack.vehicle.color,
+        secTrack.vehicle.liveStatsX,
+        secTrack.vehicle.liveStatsY,
+        secTrack.vehicle.liveStatsScale,
+      );
     }
 
     this.deps.onTick({

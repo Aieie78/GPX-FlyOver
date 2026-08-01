@@ -2,22 +2,27 @@ import { MapLibreMap, type ErrorEvent } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useEffect, useRef } from 'react';
 import { setSessionEngine, setSessionMap, setSessionRecCanvas } from '../../app/flyoverSession';
-import { setupRouteLayers, styleUrlFor } from '../../map/mapSetup';
+import { setRouteColor, setupRouteLayers, setupTerrain, styleUrlFor } from '../../map/mapSetup';
 import { PreviewEngine } from '../../preview/PreviewEngine';
-import { getPrimaryTrack, useProjectStore } from '../../store/useProjectStore';
+import { useProjectStore } from '../../store/useProjectStore';
 import { usePlaybackStore } from '../../store/usePlaybackStore';
+import { effectiveRouteColor } from '../../vehicle/routeColor';
+import { LiveStatsBoxHandle } from './LiveStatsBoxHandle';
 import { TextOverlayHandle } from './TextOverlayHandle';
 import './mapCanvas.css';
 
-// Monta MapLibre GL e ricrea mappa/percorso/PreviewEngine ogni volta che viene caricata una
-// nuova traccia — esattamente come "1. Carica traccia sulla mappa" nell'originale, che
-// distrugge la mappa precedente e ne crea una nuova (gpx-flyover.html:427-478).
+// Monta MapLibre GL e ricrea mappa/percorsi/PreviewEngine ogni volta che cambia l'INSIEME delle
+// tracce caricate (aggiunta/rimozione) — esattamente come "1. Carica traccia sulla mappa"
+// nell'originale, che distrugge la mappa precedente e ne crea una nuova
+// (gpx-flyover.html:427-478), esteso in Fase 5.3 a disegnare un percorso per ciascuna traccia.
+// Non si ricrea per un semplice cambio di colore/icona (vedi effect leggero più sotto).
 export function MapCanvas() {
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const recCanvasRef = useRef<HTMLCanvasElement>(null);
   const mapInstanceRef = useRef<MapLibreMap | null>(null);
-  const track = useProjectStore((s) => getPrimaryTrack(s)?.track ?? null);
+  const tracks = useProjectStore((s) => s.tracks);
+  const trackIdsKey = tracks.map((t) => t.id).join(',');
 
   useEffect(() => {
     setSessionRecCanvas(recCanvasRef.current);
@@ -25,7 +30,9 @@ export function MapCanvas() {
   }, []);
 
   useEffect(() => {
-    if (!track || !containerRef.current) return;
+    const currentTracks = useProjectStore.getState().tracks;
+    const primary = currentTracks.find((t) => t.isPrimary);
+    if (!primary || !containerRef.current) return;
 
     usePlaybackStore.getState().setIsPlaying(false);
     usePlaybackStore.getState().setCanPreview(false);
@@ -42,7 +49,7 @@ export function MapCanvas() {
     const map = new MapLibreMap({
       container: containerRef.current,
       style: styleUrl,
-      center: [track.pts[0].lon, track.pts[0].lat],
+      center: [primary.track.pts[0].lon, primary.track.pts[0].lat],
       zoom: camera.zoom,
       pitch: camera.pitch,
       bearing: 0,
@@ -65,10 +72,13 @@ export function MapCanvas() {
     // sicuro contro questa race condition: eseguire subito se già pronta, altrimenti attendere
     // l'evento una tantum.
     const onStyleReady = () => {
-      const currentTrack = getPrimaryTrack(useProjectStore.getState())?.track;
-      if (!currentTrack) return;
+      const nowTracks = useProjectStore.getState().tracks;
+      if (nowTracks.length === 0) return;
       try {
-        setupRouteLayers(map, currentTrack, mapParams.maptilerToken);
+        setupTerrain(map, mapParams.maptilerToken);
+        for (const t of nowTracks) {
+          setupRouteLayers(map, t.track, String(t.id), effectiveRouteColor(t, nowTracks.length));
+        }
         usePlaybackStore.getState().setStatusMessage('Traccia caricata. Premi Anteprima o Registra.');
       } catch (err) {
         console.error(err);
@@ -82,10 +92,9 @@ export function MapCanvas() {
           const engine = new PreviewEngine({
             map,
             overlayCanvas: overlayRef.current,
-            getTrack: () => getPrimaryTrack(useProjectStore.getState())!.track,
+            getTracks: () => useProjectStore.getState().tracks,
             getVideoParams: () => useProjectStore.getState().video,
             getCameraParams: () => useProjectStore.getState().camera,
-            getVehicleParams: () => getPrimaryTrack(useProjectStore.getState())!.vehicle,
             getTitle: () => useProjectStore.getState().title,
             getMusicTracks: () => useProjectStore.getState().musicTracks,
             getPhotoClips: () => useProjectStore.getState().photoClips,
@@ -110,14 +119,27 @@ export function MapCanvas() {
       if (mapInstanceRef.current === map) mapInstanceRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [track]);
+  }, [trackIdsKey]);
+
+  // Ritinteggia i layer del percorso quando cambia il colore icona di una traccia (o il numero
+  // di tracce, che decide se la principale resta gialla fissa) — senza ricreare la mappa.
+  const routeColorsKey = tracks.map((t) => `${t.id}:${effectiveRouteColor(t, tracks.length)}`).join(',');
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    for (const t of tracks) {
+      setRouteColor(map, String(t.id), effectiveRouteColor(t, tracks.length));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeColorsKey]);
 
   return (
     <div className="map-canvas" ref={containerRef}>
-      {!track && <span className="map-canvas__placeholder">Carica un file GPX per iniziare</span>}
+      {tracks.length === 0 && <span className="map-canvas__placeholder">Carica un file GPX per iniziare</span>}
       <canvas className="map-canvas__overlay" ref={overlayRef} />
       <canvas className="map-canvas__rec" ref={recCanvasRef} />
       <TextOverlayHandle containerRef={containerRef} />
+      <LiveStatsBoxHandle containerRef={containerRef} />
     </div>
   );
 }
