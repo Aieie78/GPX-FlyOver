@@ -1,0 +1,26 @@
+GPX Flyover - pacchetto portatile
+==================================
+
+Questa cartella contiene tutto il necessario per usare GPX Flyover su un altro PC,
+senza installare il progetto ne' eseguire "npm install". Ci sono due modi per
+avviarlo: scegli quello adatto al PC di destinazione.
+
+1) Se il PC ha (o puo' avere) Node.js installato da https://nodejs.org:
+   Fai doppio click su
+       Avvia GPX Flyover.lnk
+   Usa serve-standalone.cjs (richiede Node.js nel PATH).
+
+2) Se il PC NON puo' eseguire Node.js - ad esempio perche' l'esecuzione di
+   eseguibili non autorizzati (incluso Node.js portable) e' bloccata da una
+   whitelist aziendale:
+   Fai doppio click su
+       Avvia GPX Flyover (senza Node).lnk
+   Usa serve-standalone.ps1: solo PowerShell, gia' incluso in Windows, nessun
+   eseguibile esterno da autorizzare.
+
+In entrambi i casi si apre automaticamente il browser predefinito con il tool
+pronto all'uso. Per chiudere il programma basta chiudere la finestra nera
+(il terminale) che resta aperta insieme al browser.
+
+Se nessuno dei due funziona (ad esempio e' bloccata anche l'esecuzione di
+script PowerShell), contatta chi ti ha fornito questo pacchetto.
