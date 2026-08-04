@@ -1,6 +1,7 @@
 import { AlertTriangle, Info, Lightbulb, Trash2 } from 'lucide-react';
-import { fmtDuration } from '../../geo/geo';
+import { fmtDuration, getEffectiveMaxSpeedPoint } from '../../geo/geo';
 import { useProjectStore } from '../../store/useProjectStore';
+import { computeSlowZone, slowZoneExtraSeconds } from '../../timeline/timelineMath';
 import type { SegmentMode, VehicleTrack } from '../../types/domain';
 
 interface GpxSourcePanelProps {
@@ -108,6 +109,22 @@ export function GpxSourcePanel({
   const removeTrack = useProjectStore((s) => s.removeTrack);
   const title = useProjectStore((s) => s.title);
   const setTitle = useProjectStore((s) => s.setTitle);
+  const photoClips = useProjectStore((s) => s.photoClips);
+  const maxSpeedMarker = useProjectStore((s) => s.maxSpeedMarker);
+
+  // "Durata totale consigliata" — ricalcolata dal vivo (non solo al caricamento del GPX come la
+  // durata di volo consigliata sopra) ogni volta che cambiano foto/video in timeline o le
+  // impostazioni di rallentamento della bandierina: durata di volo + somma foto/video + tempo
+  // extra dovuto al rallentamento intorno al punto di velocità massima (slowZoneExtraSeconds).
+  const primaryTrack = tracks.find((t) => t.isPrimary);
+  const photoTotalSec = photoClips.reduce((sum, p) => sum + p.duration, 0);
+  const effectiveMaxSpeedPoint = primaryTrack
+    ? getEffectiveMaxSpeedPoint(primaryTrack.track, primaryTrack.maxSpeedExclusions)
+    : null;
+  const slowZone = primaryTrack ? computeSlowZone(effectiveMaxSpeedPoint, primaryTrack.track.totalDist, maxSpeedMarker) : null;
+  const slowdownExtraSec = suggestedDurationSec != null ? slowZoneExtraSeconds(slowZone, suggestedDurationSec) : 0;
+  const extraSec = photoTotalSec + slowdownExtraSec;
+  const totalSuggestedSec = suggestedDurationSec != null ? Math.round(suggestedDurationSec + extraSec) : null;
 
   return (
     <>
@@ -146,7 +163,13 @@ export function GpxSourcePanel({
 
       {suggestedDurationSec != null && (
         <p className="stats-tip">
-          <Lightbulb size={12} /> Per leggere bene le località: durata video consigliata ≈ {suggestedDurationSec}s
+          <Lightbulb size={12} /> Volo: ≈{suggestedDurationSec}s per un ritmo leggibile.
+          {extraSec > 0.5 && (
+            <>
+              {' '}
+              Con foto/video attuali (+{Math.round(extraSec)}s): durata totale consigliata ≈{totalSuggestedSec}s
+            </>
+          )}{' '}
           (regola tu il campo "Durata video" nella sezione Video)
         </p>
       )}
