@@ -1,8 +1,8 @@
 import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import type { MapStyleId, Track } from '../types/domain';
 
-export function styleUrlFor(styleId: MapStyleId, customStyleUrl: string, token: string): string {
-  const customUrl = customStyleUrl.trim();
+export function styleUrlFor(styleId: MapStyleId, customStyleUrl: string, token: string, useCustomStyleUrl: boolean): string {
+  const customUrl = useCustomStyleUrl ? customStyleUrl.trim() : '';
   return customUrl || `https://api.maptiler.com/maps/${styleId}/style.json?key=${token}`;
 }
 

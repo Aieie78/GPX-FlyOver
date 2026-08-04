@@ -29,14 +29,26 @@ export function MapStylePanel() {
         <option value="winter-v2">Winter</option>
       </select>
 
-      <label>URL stile personalizzato</label>
-      <input
-        type="text"
-        placeholder="facoltativo: https://api.maptiler.com/maps/.../style.json?key=..."
-        value={mapParams.customStyleUrl}
-        onChange={(e) => updateMap({ customStyleUrl: e.target.value })}
-      />
-      <p className="field-hint">Le modifiche qui hanno effetto al prossimo "1. Carica traccia sulla mappa".</p>
+      <label>
+        <input
+          type="checkbox"
+          checked={mapParams.useCustomStyleUrl}
+          onChange={(e) => updateMap({ useCustomStyleUrl: e.target.checked })}
+        />
+        Usa URL stile personalizzato
+      </label>
+      {mapParams.useCustomStyleUrl && (
+        <input
+          type="text"
+          placeholder="https://api.maptiler.com/maps/.../style.json?key=..."
+          value={mapParams.customStyleUrl}
+          onChange={(e) => updateMap({ customStyleUrl: e.target.value })}
+        />
+      )}
+      <p className="field-hint">
+        Se disattivato, viene sempre usato lo stile scelto dal menu qui sopra, anche se il campo contiene un URL. Le
+        modifiche qui hanno effetto al prossimo "1. Carica traccia sulla mappa".
+      </p>
     </>
   );
 }
