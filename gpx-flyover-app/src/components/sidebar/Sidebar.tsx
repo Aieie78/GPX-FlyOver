@@ -28,6 +28,9 @@ export function Sidebar({ collapsed }: SidebarProps) {
   const segmentMode = useProjectStore((s) => s.segmentMode);
   const tracks = useProjectStore((s) => s.tracks);
   const addTrack = useProjectStore((s) => s.addTrack);
+  const updateVehicle = useProjectStore((s) => s.updateVehicle);
+  const setMaxSpeedExclusions = useProjectStore((s) => s.setMaxSpeedExclusions);
+  const setPrimaryTrack = useProjectStore((s) => s.setPrimaryTrack);
   const setIsPlaying = usePlaybackStore((s) => s.setIsPlaying);
   const setCanPreview = usePlaybackStore((s) => s.setCanPreview);
 
@@ -67,6 +70,17 @@ export function Sidebar({ collapsed }: SidebarProps) {
       setLoadedFileName(file.name);
       const newId = addTrack(file.name, parsed);
       setSelectedTrackId(newId);
+
+      // Riaggancio automatico per nome file: se questo GPX era atteso da un "Carica progetto"
+      // precedente (stesso nome), riapplica le impostazioni Mezzo/esclusioni bandierina salvate
+      // e, se era la principale, forza di nuovo il ruolo (anche se un altro file era stato
+      // ricaricato per primo in questa sessione — vedi ProjectPanel.tsx).
+      const expected = usePlaybackStore.getState().expectedTracksMeta.find((t) => t.fileName === file.name);
+      if (expected) {
+        updateVehicle(newId, expected.vehicle);
+        setMaxSpeedExclusions(newId, expected.maxSpeedExclusions);
+        if (expected.isPrimary) setPrimaryTrack(newId);
+      }
     } catch (err) {
       console.error(err);
       setLoadError(err instanceof Error ? err.message : 'Errore durante il parsing del GPX');

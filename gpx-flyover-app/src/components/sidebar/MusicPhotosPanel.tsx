@@ -21,7 +21,24 @@ export function MusicPhotosPanel() {
       try {
         const totalDur = useProjectStore.getState().video.durationSec;
         const track = await decodeMusicFile(file, useProjectStore.getState().musicTracks, totalDur, musicVolume);
-        addMusicTrack(track);
+        // Riaggancio automatico per nome file: se questo brano era atteso da un "Carica
+        // progetto" precedente (stesso nome), riapplica posizione/taglio/volume salvati invece
+        // dei default "nuovo blocco in coda" — il buffer audio resta quello appena decodificato
+        // (mai incorporato nel salvataggio), il taglio salvato viene limitato alla durata reale
+        // nel caso il file ricaricato non sia esattamente identico a quello originale.
+        const expected = usePlaybackStore.getState().expectedMusicMeta.find((m) => m.name === file.name);
+        const finalTrack = expected
+          ? {
+              ...track,
+              videoStart: expected.videoStart,
+              trimStart: Math.min(expected.trimStart, track.duration),
+              trimEnd: Math.min(expected.trimEnd, track.duration),
+              volume: expected.volume,
+              muted: expected.muted,
+              solo: expected.solo,
+            }
+          : track;
+        addMusicTrack(finalTrack);
       } catch (err) {
         console.error('Errore decodifica audio', file.name, err);
         setStatusMessage(`Impossibile leggere il file audio "${file.name}" — formato non supportato?`);
