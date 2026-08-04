@@ -38,10 +38,24 @@
 .sidebar-footer {
   flex: 0 0 auto;
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 6px;
   padding: 10px 16px;
   border-top: 1px solid var(--border);
   background: rgba(0, 0, 0, 0.22);
+}
+
+.sidebar-footer__buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.sidebar-footer__identity {
+  text-align: center;
+  font-size: 10.5px;
+  color: var(--text);
+  opacity: 0.55;
+  letter-spacing: 0.02em;
 }
 
 .sidebar-footer__btn {

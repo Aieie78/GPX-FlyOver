@@ -12,26 +12,31 @@ export function SidebarFooter() {
 
   return (
     <div className="sidebar-footer">
-      <button
-        type="button"
-        className="sidebar-footer__btn"
-        disabled={!canUndo}
-        onClick={handleUndo}
-        title="Annulla (Ctrl+Z)"
-        aria-label="Annulla"
-      >
-        <Undo2 size={16} strokeWidth={2.75} />
-      </button>
-      <button
-        type="button"
-        className="sidebar-footer__btn"
-        disabled={!canRedo}
-        onClick={handleRedo}
-        title="Ripeti (Ctrl+Y)"
-        aria-label="Ripeti"
-      >
-        <Redo2 size={16} strokeWidth={2.75} />
-      </button>
+      <div className="sidebar-footer__buttons">
+        <button
+          type="button"
+          className="sidebar-footer__btn"
+          disabled={!canUndo}
+          onClick={handleUndo}
+          title="Annulla (Ctrl+Z)"
+          aria-label="Annulla"
+        >
+          <Undo2 size={16} strokeWidth={2.75} />
+        </button>
+        <button
+          type="button"
+          className="sidebar-footer__btn"
+          disabled={!canRedo}
+          onClick={handleRedo}
+          title="Ripeti (Ctrl+Y)"
+          aria-label="Ripeti"
+        >
+          <Redo2 size={16} strokeWidth={2.75} />
+        </button>
+      </div>
+      {/* Identifica a colpo d'occhio quale dei due tool (normale / con editing video) è aperto —
+          i due sono mantenuti volutamente separati, vedi CLAUDE.md. */}
+      <div className="sidebar-footer__identity">GPX Flyover — Tool normale · v1.0</div>
     </div>
   );
 }
