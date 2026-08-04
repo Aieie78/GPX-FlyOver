@@ -2,9 +2,10 @@ import { AudioBufferSource, BufferTarget, CanvasSource, Output, WebMOutputFormat
 import { buildAnimParams, cameraForFrame, initialBearing, stepBearing } from '../camera/camera';
 import { renderMusicMixOffline, sliceAudioBuffer } from '../audio/musicMix';
 import { updateRouteDoneUpTo } from '../map/mapSetup';
-import { computePathIndex } from '../timeline/timelineMath';
+import { computePathIndex, computeSlowZone } from '../timeline/timelineMath';
+import { getEffectiveMaxSpeedPoint } from '../geo/geo';
+import { buildProfileBackground } from '../stats/altitudeProfile';
 import {
-  buildProfileBackground,
   buildSecondaryIndexes,
   computeAspectCrop,
   computeSecondaryFrame,
@@ -50,6 +51,8 @@ export async function recordFlightDeterministic(
     video,
     camera,
     vehicle,
+    maxSpeedMarker,
+    maxSpeedExclusions,
     secondaryTracks,
     musicTracks,
     musicVolume,
@@ -59,6 +62,8 @@ export async function recordFlightDeterministic(
     textOverlays,
   } = args;
   const secondaryIndexes = buildSecondaryIndexes(secondaryTracks);
+  const effectiveMaxSpeedPoint = getEffectiveMaxSpeedPoint(track, maxSpeedExclusions);
+  const slowZone = computeSlowZone(effectiveMaxSpeedPoint, track.totalDist, maxSpeedMarker);
 
   const baseDuration = video.durationSec;
   const effectiveDuration = baseDuration / selectedSpeed;
@@ -98,7 +103,7 @@ export async function recordFlightDeterministic(
   // Stesso pre-caricamento di recordFlight: posiziona la camera sul PRIMO fotogramma del
   // ritaglio (non necessariamente l'inizio assoluto del percorso) e attende che la mappa sia
   // davvero pronta prima di iniziare a disegnare/codificare.
-  const pathIndexAtStart = computePathIndex(frameStart / p.fps, p.totalFrames, p.fps, scaledPhotoClips);
+  const pathIndexAtStart = computePathIndex(frameStart / p.fps, p.totalFrames, p.fps, scaledPhotoClips, slowZone);
   map.jumpTo(cameraForFrame(p, pathIndexAtStart, smoothBearing));
   updateRouteDoneUpTo(
     map,
@@ -147,7 +152,7 @@ export async function recordFlightDeterministic(
       // foto/testo/percorso vanno cercati nella loro posizione originale sulla timeline nominale.
       // Solo il timestamp scritto nel file di output (sotto) è relativo all'inizio del ritaglio.
       const videoTimeSec = i / p.fps;
-      const pathIndex = computePathIndex(videoTimeSec, p.totalFrames, p.fps, scaledPhotoClips);
+      const pathIndex = computePathIndex(videoTimeSec, p.totalFrames, p.fps, scaledPhotoClips, slowZone);
       while (lastPathIndex < pathIndex) {
         lastPathIndex++;
         smoothBearing = stepBearing(smoothBearing, lastPathIndex, p);
@@ -173,6 +178,8 @@ export async function recordFlightDeterministic(
         track,
         vehicle,
         primaryFileName,
+        maxSpeedMarker,
+        effectiveMaxSpeedPoint,
         profileBg,
         {
           title: p.title,

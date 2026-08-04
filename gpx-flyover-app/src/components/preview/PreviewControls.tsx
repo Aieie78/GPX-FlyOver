@@ -3,8 +3,10 @@ import type { MouseEvent as ReactMouseEvent } from 'react';
 import { Pause, Play, SkipBack, SkipForward } from 'lucide-react';
 import { getSessionEngine } from '../../app/flyoverSession';
 import { fmtMinSec } from '../../audio/musicEngine';
-import { useProjectStore } from '../../store/useProjectStore';
+import { getEffectiveMaxSpeedPoint } from '../../geo/geo';
+import { getPrimaryTrack, useProjectStore } from '../../store/useProjectStore';
 import { usePlaybackStore } from '../../store/usePlaybackStore';
+import { computeSlowZone, pathFractionToVideoTime } from '../../timeline/timelineMath';
 import { useTimelineRowScroll } from '../../timeline/useTimelineRowScroll';
 import type { PlaybackSpeed } from '../../types/domain';
 import '../layout/transportGrid.css';
@@ -26,9 +28,13 @@ export function PreviewControls() {
   const currentTimeSec = usePlaybackStore((s) => s.currentTimeSec);
   const totalTimeSec = usePlaybackStore((s) => s.totalTimeSec);
   const totalDur = useProjectStore((s) => s.video.durationSec);
+  const fps = useProjectStore((s) => s.video.fps);
   const trimStartSec = useProjectStore((s) => s.video.trimStartSec);
   const trimEndSec = useProjectStore((s) => s.video.trimEndSec);
   const updateVideo = useProjectStore((s) => s.updateVideo);
+  const photoClips = useProjectStore((s) => s.photoClips);
+  const maxSpeedMarker = useProjectStore((s) => s.maxSpeedMarker);
+  const primaryTrack = useProjectStore((s) => getPrimaryTrack(s));
   const { scrollRef, onScroll, onWheel, zoom } = useTimelineRowScroll();
   const [hover, setHover] = useState<{ pct: number; timeSec: number } | null>(null);
   const laneRef = useRef<HTMLDivElement>(null);
@@ -43,6 +49,23 @@ export function PreviewControls() {
   const effectiveTrimEnd = trimEndSec ?? totalDur;
   const trimStartPct = totalDur > 0 ? Math.max(0, Math.min(100, (trimStartSec / totalDur) * 100)) : 0;
   const trimEndPct = totalDur > 0 ? Math.max(0, Math.min(100, (effectiveTrimEnd / totalDur) * 100)) : 100;
+
+  // Marcatore fisso del punto "Velocità max" sul righello: a quale istante della timeline VIDEO
+  // (nominale, 0..durationSec) il volo attraversa quel punto del percorso — inversa di
+  // videoTimeToPathTime/computePathIndex (timelineMath.ts), tenendo conto delle foto e della zona
+  // di rallentamento. Ricalcolato quando cambiano traccia/foto/impostazioni, non ad ogni frame.
+  const maxSpeedPoint = primaryTrack ? getEffectiveMaxSpeedPoint(primaryTrack.track, primaryTrack.maxSpeedExclusions) : null;
+  let maxSpeedMarkerPct: number | null = null;
+  let maxSpeedMarkerVideoTime = 0;
+  if (maxSpeedPoint && primaryTrack && totalDur > 0) {
+    const slowZone = computeSlowZone(maxSpeedPoint, primaryTrack.track.totalDist, maxSpeedMarker);
+    const fraction = maxSpeedPoint.dist / primaryTrack.track.totalDist;
+    maxSpeedMarkerVideoTime = pathFractionToVideoTime(fraction, photoClips, totalDur, slowZone);
+    maxSpeedMarkerPct = Math.max(0, Math.min(100, (maxSpeedMarkerVideoTime / totalDur) * 100));
+  }
+  const seekToMaxSpeedPoint = () => {
+    getSessionEngine()?.seekTo(Math.round(maxSpeedMarkerVideoTime * fps));
+  };
 
   const resetTrim = () => updateVideo({ trimStartSec: 0, trimEndSec: null });
 
@@ -140,6 +163,18 @@ export function PreviewControls() {
             <div className="preview-controls__trim-dim" style={{ left: `${trimEndPct}%`, width: `${100 - trimEndPct}%` }} />
           )}
           <div className="lane-playhead" style={{ left: `${playheadPct}%` }} />
+          {maxSpeedMarkerPct != null && (
+            <div
+              className="preview-controls__max-speed-marker"
+              style={{ left: `${maxSpeedMarkerPct}%` }}
+              title={`Punto di velocità massima — clic per saltare qui (${fmtMinSec(maxSpeedMarkerVideoTime)})`}
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                seekToMaxSpeedPoint();
+              }}
+            />
+          )}
           <div
             className="preview-controls__trim-handle preview-controls__trim-handle--start"
             style={{ left: `${trimStartPct}%` }}

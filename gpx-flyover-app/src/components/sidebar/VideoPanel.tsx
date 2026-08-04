@@ -74,7 +74,7 @@ export function VideoPanel() {
           checked={video.showAltitudeProfile}
           onChange={(e) => updateVideo({ showAltitudeProfile: e.target.checked })}
         />
-        Mostra sagoma profilo altimetrico (in alto a destra)
+        Mostra profilo altimetrico (anteprima e video, in alto a destra)
       </label>
     </>
   );

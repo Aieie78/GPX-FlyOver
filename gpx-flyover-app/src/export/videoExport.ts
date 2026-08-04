@@ -3,14 +3,19 @@ import { buildAnimParams, cameraForFrame, initialBearing, stepBearing } from '..
 import { ensureAudioCtx } from '../audio/musicEngine';
 import { renderMusicMixOffline, sliceAudioBuffer } from '../audio/musicMix';
 import { updateRouteDoneUpTo } from '../map/mapSetup';
-import { buildTimeIndex, findPointAtTime, type TimedPoint, type TimeIndexedTrack } from '../geo/geo';
-import { computePathIndex } from '../timeline/timelineMath';
+import { buildTimeIndex, findPointAtTime, getEffectiveMaxSpeedPoint, type TimedPoint, type TimeIndexedTrack } from '../geo/geo';
+import { computePathIndex, computeSlowZone } from '../timeline/timelineMath';
 import { drawAltitudeLine, drawVehicleIcon, vehicleScreenPos } from '../vehicle/vehicleIcon';
 import { drawPhotoCover, getActivePhotoLayers } from '../photos/photoEngine';
 import { drawLiveStatsBox } from '../stats/liveStatsOverlay';
+import { buildProfileBackground, drawAltitudeProfile, type ProfileBackground } from '../stats/altitudeProfile';
+import { drawMaxSpeedMarker, maxSpeedMarkerScreenPos } from '../stats/maxSpeedMarker';
 import { drawTextOverlay, getActiveTextOverlays } from '../text/textEngine';
 import type {
   CameraParams,
+  MaxSpeedExclusion,
+  MaxSpeedMarkerParams,
+  MaxSpeedPoint,
   MusicTrack,
   PathPoint,
   PhotoClip,
@@ -149,61 +154,6 @@ export function waitForMapIdle(map: MapLibreMap, timeoutMs = 3000): Promise<void
   });
 }
 
-export interface ProfileBackground {
-  canvas: HTMLCanvasElement;
-  pw: number;
-  ph: number;
-  eleMin: number;
-  eleRange: number;
-}
-
-// Pre-disegna la sagoma statica del profilo altimetrico (sfondo sfumato + linea, 250 punti)
-// UNA sola volta per registrazione, invece di ricostruirla ad ogni fotogramma — l'unica parte
-// che cambia frame per frame è il pallino di posizione, disegnato separatamente sopra
-// nell'immagine già pronta. Ottimizzazione di performance (nessun cambiamento visivo):
-// riduce il lavoro per fotogramma nel ciclo di registrazione, che a 1080p/80s poteva far
-// perdere il passo al ritmo reale richiesto da canvas.captureStream(fps). Esportata: riusata
-// anche dal rendering deterministico (deterministicExport.ts).
-export function buildProfileBackground(track: Track, s: number): ProfileBackground {
-  const pw = 420 * s;
-  const ph = 90 * s;
-  const canvas = document.createElement('canvas');
-  canvas.width = pw;
-  canvas.height = ph;
-  const ctx = canvas.getContext('2d')!;
-  const profile = track.profile;
-  const eleMin = Math.min(...profile);
-  const eleMax = Math.max(...profile);
-  const eleRange = Math.max(1, eleMax - eleMin);
-
-  ctx.beginPath();
-  ctx.moveTo(0, ph);
-  profile.forEach((e, i) => {
-    const x = (i / (profile.length - 1)) * pw;
-    const y = ph - ((e - eleMin) / eleRange) * ph * 0.85;
-    ctx.lineTo(x, y);
-  });
-  ctx.lineTo(pw, ph);
-  ctx.closePath();
-  const grad = ctx.createLinearGradient(0, 0, 0, ph);
-  grad.addColorStop(0, 'rgba(255,204,0,0.55)');
-  grad.addColorStop(1, 'rgba(255,204,0,0.08)');
-  ctx.fillStyle = grad;
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-  ctx.lineWidth = 1.5 * s;
-  ctx.beginPath();
-  profile.forEach((e, i) => {
-    const x = (i / (profile.length - 1)) * pw;
-    const y = ph - ((e - eleMin) / eleRange) * ph * 0.85;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-
-  return { canvas, pw, ph, eleMin, eleRange };
-}
-
 interface DrawOverlayArgs {
   title: string;
   cur: PathPoint;
@@ -225,6 +175,8 @@ export function drawOverlayFrame(
   track: Track,
   vehicle: VehicleParams,
   vehicleLabel: string,
+  maxSpeedMarker: MaxSpeedMarkerParams,
+  maxSpeedPoint: MaxSpeedPoint | null,
   profileBg: ProfileBackground,
   args: DrawOverlayArgs,
   secondaryPositions: SecondaryFramePosition[] = [],
@@ -263,6 +215,21 @@ export function drawOverlayFrame(
     drawVehicleIcon(recCtx, secPos.x * scaleX, secPos.y * scaleY, s, sec.vehicle);
   }
 
+  // bandierina "Velocità max" — posizione geografica fissa, solo traccia principale, sempre
+  // disegnata (non legata al progresso del volo). maxSpeedPoint è il punto EFFETTIVO (già al
+  // netto delle esclusioni di "Scarta questo punto"), risolto una volta dal chiamante.
+  if (maxSpeedPoint) {
+    const maxSpeedPos = maxSpeedMarkerScreenPos(map, maxSpeedPoint, zoom, pitch, track.minEle, maxSpeedMarker);
+    drawMaxSpeedMarker(
+      recCtx,
+      maxSpeedPos.x * scaleX,
+      maxSpeedPos.y * scaleY,
+      recCanvas.width,
+      maxSpeedPoint,
+      maxSpeedMarker.sizeScale,
+    );
+  }
+
   // titolo
   recCtx.font = `bold ${34 * s}px system-ui`;
   recCtx.fillStyle = '#fff';
@@ -273,25 +240,7 @@ export function drawOverlayFrame(
 
   // ---- profilo altimetrico (sagoma pre-disegnata) in alto a destra, disattivabile ----
   if (showAltitudeProfile) {
-    const { canvas: profileCanvas, pw, ph, eleMin, eleRange } = profileBg;
-    const px = recCanvas.width - pw - 40 * s;
-    const py = 20 * s;
-    recCtx.drawImage(profileCanvas, px, py);
-
-    // indicatore posizione attuale sul profilo (unica parte disegnata ad ogni fotogramma)
-    const profile = track.profile;
-    const markerX = px + progress * pw;
-    const markerIdx = Math.min(profile.length - 1, Math.round(progress * (profile.length - 1)));
-    const markerY = py + ph - ((profile[markerIdx] - eleMin) / eleRange) * ph * 0.85;
-    recCtx.save();
-    recCtx.fillStyle = '#fff';
-    recCtx.beginPath();
-    recCtx.arc(markerX, markerY, 5 * s, 0, Math.PI * 2);
-    recCtx.fill();
-    recCtx.strokeStyle = 'rgba(0,0,0,0.5)';
-    recCtx.lineWidth = 1 * s;
-    recCtx.stroke();
-    recCtx.restore();
+    drawAltitudeProfile(recCtx, recCanvas.width, track, profileBg, progress);
   }
 
   // barra stats in basso
@@ -364,6 +313,8 @@ export interface RecordFlightArgs {
   video: VideoParams;
   camera: CameraParams;
   vehicle: VehicleParams;
+  maxSpeedMarker: MaxSpeedMarkerParams;
+  maxSpeedExclusions: MaxSpeedExclusion[];
   secondaryTracks: VehicleTrack[];
   musicTracks: MusicTrack[];
   musicVolume: number;
@@ -412,6 +363,8 @@ export async function recordFlight(args: RecordFlightArgs): Promise<Blob> {
     video,
     camera,
     vehicle,
+    maxSpeedMarker,
+    maxSpeedExclusions,
     secondaryTracks,
     musicTracks,
     musicVolume,
@@ -421,6 +374,8 @@ export async function recordFlight(args: RecordFlightArgs): Promise<Blob> {
     textOverlays,
   } = args;
   const secondaryIndexes = buildSecondaryIndexes(secondaryTracks);
+  const effectiveMaxSpeedPoint = getEffectiveMaxSpeedPoint(track, maxSpeedExclusions);
+  const slowZone = computeSlowZone(effectiveMaxSpeedPoint, track.totalDist, maxSpeedMarker);
 
   const baseDuration = video.durationSec;
   const effectiveDuration = baseDuration / selectedSpeed; // x1.5/x2 = video più corto e più rapido, x0.5 = più lungo e lento
@@ -466,7 +421,7 @@ export async function recordFlight(args: RecordFlightArgs): Promise<Blob> {
   // visibili caricate) PRIMA di avviare MediaRecorder — altrimenti i primi secondi del video
   // mostrerebbero tile a bassa risoluzione/incomplete, dato che la cattura partirebbe subito dopo
   // il click invece che a mappa già pronta in quella posizione.
-  const pathIndexAtStart = computePathIndex(frameStart / p.fps, p.totalFrames, p.fps, scaledPhotoClips);
+  const pathIndexAtStart = computePathIndex(frameStart / p.fps, p.totalFrames, p.fps, scaledPhotoClips, slowZone);
   map.jumpTo(cameraForFrame(p, pathIndexAtStart, smoothBearing));
   updateRouteDoneUpTo(
     map,
@@ -535,7 +490,7 @@ export async function recordFlight(args: RecordFlightArgs): Promise<Blob> {
     // videoTimeSec resta assoluto (rispetto all'intera durata effettiva, non al ritaglio) —
     // foto/testo/percorso/musica sono già ritagliati/allineati su questa stessa base assoluta.
     const videoTimeSec = i / p.fps;
-    const pathIndex = computePathIndex(videoTimeSec, p.totalFrames, p.fps, scaledPhotoClips);
+    const pathIndex = computePathIndex(videoTimeSec, p.totalFrames, p.fps, scaledPhotoClips, slowZone);
     while (lastPathIndex < pathIndex) {
       lastPathIndex++;
       smoothBearing = stepBearing(smoothBearing, lastPathIndex, p);
@@ -555,6 +510,8 @@ export async function recordFlight(args: RecordFlightArgs): Promise<Blob> {
       track,
       vehicle,
       primaryFileName,
+      maxSpeedMarker,
+      effectiveMaxSpeedPoint,
       profileBg,
       {
         title: p.title,

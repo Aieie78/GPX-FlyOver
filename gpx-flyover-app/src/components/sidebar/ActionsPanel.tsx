@@ -50,7 +50,7 @@ export function ActionsPanel({ onLoad, hasTracks }: ActionsPanelProps) {
     setIsRecording(true);
     setExportProgress(0);
     try {
-      const { video, camera, musicTracks, musicVolume, title, tracks } = useProjectStore.getState();
+      const { video, camera, musicTracks, musicVolume, title, tracks, maxSpeedMarker } = useProjectStore.getState();
       const photoClips = useProjectStore.getState().photoClips;
       const textOverlays = useProjectStore.getState().textOverlays;
       recCanvas.style.display = 'block';
@@ -63,6 +63,8 @@ export function ActionsPanel({ onLoad, hasTracks }: ActionsPanelProps) {
         video,
         camera,
         vehicle: primary.vehicle,
+        maxSpeedMarker,
+        maxSpeedExclusions: primary.maxSpeedExclusions,
         secondaryTracks: tracks.filter((t) => !t.isPrimary),
         musicTracks,
         musicVolume,

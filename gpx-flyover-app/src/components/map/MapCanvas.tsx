@@ -44,7 +44,7 @@ export function MapCanvas() {
     }
 
     const { map: mapParams, camera } = useProjectStore.getState();
-    const styleUrl = styleUrlFor(mapParams.styleId, mapParams.customStyleUrl, mapParams.maptilerToken);
+    const styleUrl = styleUrlFor(mapParams.styleId, mapParams.customStyleUrl, mapParams.maptilerToken, mapParams.useCustomStyleUrl);
 
     const map = new MapLibreMap({
       container: containerRef.current,
@@ -99,6 +99,7 @@ export function MapCanvas() {
             getMusicTracks: () => useProjectStore.getState().musicTracks,
             getPhotoClips: () => useProjectStore.getState().photoClips,
             getTextOverlays: () => useProjectStore.getState().textOverlays,
+            getMaxSpeedMarker: () => useProjectStore.getState().maxSpeedMarker,
             onTick: (info) => usePlaybackStore.getState().setTick(info),
             onEnded: () => usePlaybackStore.getState().setIsPlaying(false),
           });

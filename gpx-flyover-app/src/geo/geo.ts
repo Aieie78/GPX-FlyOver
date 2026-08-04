@@ -1,4 +1,4 @@
-import type { PathPoint, Track, TrackPoint } from '../types/domain';
+import type { MaxSpeedExclusion, MaxSpeedPoint, PathPoint, Track, TrackPoint } from '../types/domain';
 
 // Port 1:1 da gpx-flyover.html:381
 export function haversine(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
@@ -78,6 +78,57 @@ export function resamplePath(track: Track, nFrames: number): PathPoint[] {
     });
   }
   return out;
+}
+
+// Trova il punto con la velocità istantanea più alta lungo il percorso, tra ogni coppia di punti
+// GPX grezzi consecutivi (stessa formula di speedKmh in resamplePath: distanza haversine / delta
+// dei timestamp <time> originali, NON legata al ritmo del video). Chiamata una sola volta al
+// parsing (parseGpx.ts) e memorizzata su Track.maxSpeedPoint, per il marker "bandierina" a
+// posizione geografica fissa (PathPoint può "saltare" il punto esatto se il ricampionamento è più
+// rado dei punti grezzi). Il punto restituito è il punto medio del tratto p0→p1 più veloce.
+// Ritorna null se il GPX non ha timestamp validi in nessun tratto (o se tutti i tratti più veloci
+// ricadono in una zona esclusa). smoothedEle è la stessa serie usata per la quota di camera/icona
+// (parseGpx.ts) — dà un valore di quota per il sollevamento "in quota reale" del marker meno
+// rumoroso della quota grezza <ele>. exclusions (vuoto di default) esclude i tratti il cui punto
+// medio cade entro il raggio di una MaxSpeedExclusion — usata da "Scarta questo punto" per
+// ricalcolare il prossimo candidato (vedi getEffectiveMaxSpeedPoint qui sotto).
+export function findMaxSpeedPoint(
+  pts: TrackPoint[],
+  cum: number[],
+  smoothedEle: number[],
+  exclusions: MaxSpeedExclusion[] = [],
+): MaxSpeedPoint | null {
+  let best: MaxSpeedPoint | null = null;
+  for (let i = 1; i < pts.length; i++) {
+    const p0 = pts[i - 1];
+    const p1 = pts[i];
+    if (!p0.time || !p1.time) continue;
+    const dtSec = (p1.time.getTime() - p0.time.getTime()) / 1000;
+    if (dtSec <= 0) continue;
+    const speedKmh = ((cum[i] - cum[i - 1]) / dtSec) * 3.6;
+    if (best && speedKmh <= best.speedKmh) continue;
+    const lat = (p0.lat + p1.lat) / 2;
+    const lon = (p0.lon + p1.lon) / 2;
+    if (exclusions.some((ex) => haversine({ lat, lon }, ex) <= ex.radiusM)) continue;
+    best = {
+      lat,
+      lon,
+      speedKmh,
+      ele: (smoothedEle[i - 1] + smoothedEle[i]) / 2,
+      dist: (cum[i - 1] + cum[i]) / 2,
+    };
+  }
+  return best;
+}
+
+// Punto di velocità massima "effettivo" per il rendering — quello grezzo (Track.maxSpeedPoint,
+// calcolato una volta al parsing) se non ci sono esclusioni attive, altrimenti ricalcolato al
+// volo dai dati grezzi già presenti sul Track (pts/cum/smoothedEle), senza dover ri-parsare il
+// GPX. Track.maxSpeedPoint stesso non viene mai mutato: resta il "vero" massimo globale, usato da
+// "Ripristina" per azzerare le esclusioni.
+export function getEffectiveMaxSpeedPoint(track: Track, exclusions: MaxSpeedExclusion[]): MaxSpeedPoint | null {
+  if (exclusions.length === 0) return track.maxSpeedPoint;
+  return findMaxSpeedPoint(track.pts, track.cum, track.smoothedEle, exclusions);
 }
 
 // Sottoinsieme dei punti di una traccia che hanno un timestamp <time> valido, in ordine — usato

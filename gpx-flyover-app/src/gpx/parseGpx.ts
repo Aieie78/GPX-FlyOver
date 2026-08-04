@@ -1,4 +1,4 @@
-import { haversine } from '../geo/geo';
+import { findMaxSpeedPoint, haversine } from '../geo/geo';
 import type { SegmentMode, Track, TrackPoint } from '../types/domain';
 
 let trackIdSeq = 0;
@@ -137,6 +137,7 @@ export function parseGpx(xmlText: string, segmentMode: SegmentMode): Track {
   }
 
   const minEle = Math.min(...smoothedEle);
+  const maxSpeedPoint = findMaxSpeedPoint(pts, cum, smoothedEle);
   return {
     pts,
     smoothedEle,
@@ -154,5 +155,6 @@ export function parseGpx(xmlText: string, segmentMode: SegmentMode): Track {
     usedCount: pts.length,
     hasElevationData,
     minEle,
+    maxSpeedPoint,
   };
 }

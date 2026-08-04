@@ -4,10 +4,13 @@ import { nextMusicId } from '../audio/musicEngine';
 import { nextPhotoId } from '../photos/photoEngine';
 import { nextTextId } from '../text/textEngine';
 import { nextTrackId } from '../gpx/parseGpx';
+import { getEffectiveMaxSpeedPoint } from '../geo/geo';
 import { effectiveRouteColor, pickRouteColor } from '../vehicle/routeColor';
 import type {
   CameraParams,
   MapParams,
+  MaxSpeedExclusion,
+  MaxSpeedMarkerParams,
   MusicTrack,
   PhotoClip,
   ProjectState,
@@ -45,6 +48,16 @@ interface ProjectActions {
   // trackId null aggiorna pendingVehicle (nessuna traccia caricata ancora); altrimenti aggiorna
   // le impostazioni Mezzo di quella specifica traccia.
   updateVehicle: (trackId: number | null, patch: Partial<VehicleParams>) => void;
+  updateMaxSpeedMarker: (patch: Partial<MaxSpeedMarkerParams>) => void;
+  // "Scarta questo punto / trova il prossimo": esclude il punto di velocità massima ATTUALE
+  // (effettivo, già al netto delle esclusioni precedenti) e ricalcola. Nessun effetto se la
+  // traccia non ha al momento un punto valido (nessun timestamp GPX, o già tutto escluso).
+  discardMaxSpeedPoint: (trackId: number) => void;
+  resetMaxSpeedExclusions: (trackId: number) => void;
+  // Assegnazione diretta (non ricalcolata dal punto attuale) — usata dal riaggancio automatico
+  // per nome file al ricaricamento di un progetto salvato (Sidebar.tsx), per riapplicare
+  // esclusioni salvate in precedenza.
+  setMaxSpeedExclusions: (trackId: number, exclusions: MaxSpeedExclusion[]) => void;
   setMusicVolume: (volume: number) => void;
   addMusicTrack: (track: MusicTrack) => void;
   updateMusicTrack: (id: number, patch: Partial<MusicTrack>) => void;
@@ -66,6 +79,10 @@ interface ProjectActions {
 }
 
 type ProjectStore = ProjectState & ProjectActions;
+
+// Raggio (metri) della zona esclusa quando si scarta un punto di velocità massima — nel range
+// 300-500m suggerito, abbastanza da lasciarsi alle spalle il rumore GPS locale del punto scartato.
+const MAX_SPEED_EXCLUSION_RADIUS_M = 400;
 
 const defaultVehicle: VehicleParams = {
   icon: '🏍️',
@@ -102,6 +119,7 @@ const initialState: ProjectState = {
   map: {
     maptilerToken: 'FyCTckIX29KYsBltxupY',
     styleId: 'hybrid-v4',
+    useCustomStyleUrl: false,
     customStyleUrl: 'https://api.maptiler.com/maps/019fad3d-3469-7200-b415-d66035b09fd7/style.json?key=FyCTckIX29KYsBltxupY',
   },
   musicTracks: [],
@@ -110,6 +128,14 @@ const initialState: ProjectState = {
   photoDefaultDuration: 3,
   textOverlays: [],
   snapEnabled: true,
+  maxSpeedMarker: {
+    sizeScale: 1,
+    use3DAltitude: false,
+    altExaggeration: 8,
+    slowdownBeforeM: 300,
+    slowdownAfterM: 300,
+    slowdownFactor: 0.4,
+  },
 };
 
 // Undo/redo (Ctrl+Z / Ctrl+Y) copre musica, foto e parametri principali — non il Track
@@ -128,7 +154,7 @@ export const useProjectStore = create<ProjectStore>()(
           const isFirst = s.tracks.length === 0;
           const vehicle = isFirst ? { ...s.pendingVehicle } : { ...defaultVehicle };
           return {
-            tracks: [...s.tracks, { id, fileName, track, vehicle, isPrimary: isFirst }],
+            tracks: [...s.tracks, { id, fileName, track, vehicle, isPrimary: isFirst, maxSpeedExclusions: [] }],
           };
         });
         return id;
@@ -175,6 +201,30 @@ export const useProjectStore = create<ProjectStore>()(
             }),
           };
         }),
+      updateMaxSpeedMarker: (patch) => set((s) => ({ maxSpeedMarker: { ...s.maxSpeedMarker, ...patch } })),
+      discardMaxSpeedPoint: (trackId) =>
+        set((s) => ({
+          tracks: s.tracks.map((t) => {
+            if (t.id !== trackId) return t;
+            const current = getEffectiveMaxSpeedPoint(t.track, t.maxSpeedExclusions);
+            if (!current) return t;
+            return {
+              ...t,
+              maxSpeedExclusions: [
+                ...t.maxSpeedExclusions,
+                { lat: current.lat, lon: current.lon, radiusM: MAX_SPEED_EXCLUSION_RADIUS_M },
+              ],
+            };
+          }),
+        })),
+      resetMaxSpeedExclusions: (trackId) =>
+        set((s) => ({
+          tracks: s.tracks.map((t) => (t.id === trackId ? { ...t, maxSpeedExclusions: [] } : t)),
+        })),
+      setMaxSpeedExclusions: (trackId, exclusions) =>
+        set((s) => ({
+          tracks: s.tracks.map((t) => (t.id === trackId ? { ...t, maxSpeedExclusions: exclusions } : t)),
+        })),
       setMusicVolume: (musicVolume) => set({ musicVolume }),
       addMusicTrack: (track) => set((s) => ({ musicTracks: [...s.musicTracks, track] })),
       updateMusicTrack: (id, patch) =>

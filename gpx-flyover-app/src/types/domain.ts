@@ -25,6 +25,48 @@ export interface Track {
   usedCount: number;
   hasElevationData: boolean; // false se meno della metà dei punti aveva un tag <ele> valido
   minEle: number;
+  // Punto con la velocità più alta lungo il percorso — null se il GPX non ha timestamp <time>
+  // validi in nessun tratto (vedi MaxSpeedPoint).
+  maxSpeedPoint: MaxSpeedPoint | null;
+}
+
+// Punto (lat/lon) con la velocità istantanea più alta lungo il percorso, calcolato al parsing
+// (findMaxSpeedPoint in geo.ts) con la stessa formula di speedKmh in resamplePath/PathPoint qui
+// sotto — usato per il marker "bandierina" (posizione geografica fissa, sempre visibile) in
+// anteprima ed export, solo per la traccia principale.
+export interface MaxSpeedPoint {
+  lat: number;
+  lon: number;
+  speedKmh: number;
+  ele: number; // quota (media dei due punti grezzi del tratto) — per il sollevamento in quota reale del marker
+  dist: number; // metri dall'inizio percorso (punto medio del tratto p0→p1 più veloce) — ancora per il rallentamento/marker timeline
+}
+
+// Impostazioni utente della bandierina "Velocità max" (pannello Mezzo, solo traccia principale):
+// dimensione del pin, sollevamento in quota reale (stesso meccanismo di VehicleParams.use3DAltitude/
+// altExaggeration) e la zona di rallentamento del volo intorno al punto (Fase "bandierina" step 3/4).
+export interface MaxSpeedMarkerParams {
+  sizeScale: number;
+  use3DAltitude: boolean;
+  altExaggeration: number;
+  // Distanza (metri) prima/dopo il punto entro cui il volo rallenta per dare tempo di leggere la
+  // bandierina — il rallentamento è un vero rallentamento del ritmo di volo (non un timer fisso),
+  // quindi resta sincronizzato automaticamente a qualunque velocità di riproduzione (x0.5..x2).
+  slowdownBeforeM: number;
+  slowdownAfterM: number;
+  // Velocità relativa del volo dentro la zona di rallentamento (0..1, es. 0.4 = 40% del ritmo normale).
+  slowdownFactor: number;
+}
+
+// Zona esclusa dalla ricerca del punto di velocità massima — "Scarta questo punto" (pannello
+// Mezzo) ne aggiunge una centrata sul punto attuale, così il punto successivo trovato non è di
+// nuovo lo stesso tratto (rumore GPS locale). Vive su VehicleTrack (non su Track, che resta dato
+// grezzo immutabile) perché è una preferenza dell'utente sulla traccia caricata, non derivata dal
+// GPX in sé — vedi getEffectiveMaxSpeedPoint in geo.ts.
+export interface MaxSpeedExclusion {
+  lat: number;
+  lon: number;
+  radiusM: number;
 }
 
 export type SegmentMode = 'longest' | 'concat';
@@ -64,7 +106,7 @@ export interface VideoParams {
   // valore). L'anteprima interattiva resta invariata: il ritaglio si applica solo in esportazione.
   trimStartSec: number;
   trimEndSec: number | null;
-  showAltitudeProfile: boolean; // sagoma del profilo altimetrico in alto a destra (solo export)
+  showAltitudeProfile: boolean; // sagoma del profilo altimetrico in alto a destra (anteprima e export)
 }
 
 export interface CameraParams {
@@ -79,7 +121,12 @@ export type MapStyleId = 'hybrid-v4' | 'satellite-v2' | 'outdoor-v2' | 'winter-v
 export interface MapParams {
   maptilerToken: string;
   styleId: MapStyleId;
-  customStyleUrl: string; // fallback, ha precedenza su styleId se non vuoto
+  // customStyleUrl viene usato al posto di styleId SOLO se useCustomStyleUrl è true — altrimenti
+  // resta ignorato anche se contiene del testo (evita che un URL dimenticato nel campo prenda
+  // priorità senza che sia chiaro perché: lo stile scelto dal menu resta sempre quello effettivo
+  // finché l'utente non attiva esplicitamente l'override).
+  useCustomStyleUrl: boolean;
+  customStyleUrl: string;
 }
 
 export type VehicleIcon = '🏍️' | '🚗' | '🚁' | '✈️' | '🚢' | 'none';
@@ -115,6 +162,9 @@ export interface VehicleTrack {
   track: Track;
   vehicle: VehicleParams;
   isPrimary: boolean;
+  // Zone escluse dalla ricerca del punto "Velocità max" (vedi MaxSpeedExclusion) — vuoto finché
+  // l'utente non usa "Scarta questo punto" nel pannello Mezzo.
+  maxSpeedExclusions: MaxSpeedExclusion[];
 }
 
 export interface MusicTrack {
@@ -191,4 +241,5 @@ export interface ProjectState {
   photoDefaultDuration: number;
   textOverlays: TextOverlay[];
   snapEnabled: boolean;
+  maxSpeedMarker: MaxSpeedMarkerParams;
 }

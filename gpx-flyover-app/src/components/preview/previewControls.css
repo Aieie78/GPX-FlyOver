@@ -110,6 +110,43 @@
   width: 6px;
 }
 
+/* Marcatore fisso del punto "Velocità max" sul righello (PreviewControls.tsx) — stesso giallo
+ * della bandierina sulla mappa, per associarli visivamente a colpo d'occhio. */
+.preview-controls__max-speed-marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  transform: translateX(-50%);
+  cursor: pointer;
+  z-index: 9;
+}
+.preview-controls__max-speed-marker::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: #ffcc00;
+}
+.preview-controls__max-speed-marker::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-left: 7px solid #ffcc00;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+}
+.preview-controls__max-speed-marker:hover::before,
+.preview-controls__max-speed-marker:hover::after {
+  filter: brightness(1.2);
+}
+
 .preview-controls__hover-tooltip {
   position: absolute;
   bottom: calc(100% + 6px);
