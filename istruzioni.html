@@ -65,6 +65,7 @@
       <li><a href="#camera">Impostazioni camera e preset</a></li>
       <li><a href="#mappa">Stile mappa</a></li>
       <li><a href="#veicolo">Mezzo, quota e statistiche in tempo reale</a></li>
+      <li><a href="#bandierina">Bandierina "Velocità max"</a></li>
       <li><a href="#musica">Musica &amp; Foto</a></li>
       <li><a href="#timeline">Timeline e scorciatoie da tastiera</a></li>
       <li><a href="#player">Barra di riproduzione e intervallo di export</a></li>
@@ -108,7 +109,7 @@
 
   <div class="field">
     <div class="name">Km/sec percepiti</div>
-    <div class="text">Non influisce sul video — serve solo a calcolare il <b>suggerimento di durata</b> che compare nelle statistiche dopo aver caricato il GPX. Default <span class="default">1.8</span>. Abbassalo per un suggerimento di ritmo più lento/leggibile, alzalo per un video più rapido.</div>
+    <div class="text">Non influisce sul video — serve solo a calcolare il <b>suggerimento di durata</b> che compare nelle statistiche dopo aver caricato il GPX. Default <span class="default">1.8</span>. Abbassalo per un suggerimento di ritmo più lento/leggibile, alzalo per un video più rapido. Il suggerimento può mostrare due righe: la <b>durata di volo</b> (fissa, calcolata solo su questo valore al momento del caricamento) e — se in timeline ci sono foto/video e/o è attivo il rallentamento della bandierina "Velocità max" — la <b>durata totale consigliata</b>, ricalcolata dal vivo ogni volta che questi cambiano, che somma anche quel tempo extra.</div>
   </div>
 
   <div class="field">
@@ -150,8 +151,8 @@
   </div>
 
   <div class="field">
-    <div class="name">Mostra sagoma profilo altimetrico</div>
-    <div class="text">Checkbox, default <span class="default">attivo</span>. Mostra in alto a destra nel video la sagoma del profilo altimetrico del percorso, come riferimento visivo di salite/discese.</div>
+    <div class="name">Mostra profilo altimetrico</div>
+    <div class="text">Checkbox, default <span class="default">attivo</span>. Mostra in alto a destra la sagoma del profilo altimetrico del percorso, con un pallino che segna la posizione attuale, come riferimento visivo di salite/discese — visibile sia <b>durante l'anteprima interattiva</b> sia nel video esportato, identica in entrambi (prima era visibile solo nel video).</div>
   </div>
 
   <h2 id="camera">Impostazioni camera</h2>
@@ -190,8 +191,8 @@
   </div>
 
   <div class="field">
-    <div class="name">URL stile personalizzato</div>
-    <div class="text">Campo di riserva: se uno degli stili sopra non si carica correttamente, incolla qui l'URL completo dello <code>style.json</code> (lo trovi nella pagina dello stile scelto su MapTiler, sezione "Use vector style"). Se compilato, ha la priorità sulla scelta del menu a tendina.</div>
+    <div class="name">Usa URL stile personalizzato</div>
+    <div class="text">Checkbox, default <b>OFF</b>. Campo di riserva: se uno degli stili sopra non si carica correttamente, spunta questo checkbox e nel campo di testo che compare incolla l'URL completo dello <code>style.json</code> (lo trovi nella pagina dello stile scelto su MapTiler, sezione "Use vector style"). Finché il checkbox è spento, il campo resta nascosto e viene sempre ignorato anche se contiene un URL — vince sempre lo stile scelto dal menu a tendina, così non capita di dimenticare un URL nel campo senza accorgersene.</div>
   </div>
 
   <h2 id="veicolo">Mezzo, quota e statistiche in tempo reale</h2>
@@ -236,6 +237,35 @@
   <div class="field">
     <div class="name">Mostra dati in tempo reale (velocità/quota/posizione)</div>
     <div class="text">Checkbox, default <b>OFF</b>. Se attivo, in anteprima/registrazione compare un riquadro con: nome traccia, velocità (km/h, "n/d" se il GPX non ha timestamp), rotta (gradi + punto cardinale), quota (m), <b>Ora GMT</b> (dal timestamp originale del GPX, indipendente dalla velocità di riproduzione), coordinate in gradi/primi/secondi. Compare anche <b>Dimensione riquadro dati</b> (default 1, range 0.5-2). Ogni traccia caricata ha un riquadro indipendente, e in anteprima il riquadro è <b>trascinabile</b> direttamente sulla mappa per riposizionarlo.</div>
+  </div>
+
+  <h2 id="bandierina">Bandierina "Velocità max"</h2>
+  <p>Sulla mappa compare, fin da subito dopo il caricamento del GPX, un segnaposto a goccia giallo nel punto in cui la traccia <b>principale</b> raggiunge la velocità istantanea più alta (calcolata dai timestamp <code>&lt;time&gt;</code> del GPX) — cerchio bianco con icona ⚡ ed etichetta <b>"Velocità max: X km/h"</b> sempre visibile accanto, non solo al passaggio del mouse. È una posizione geografica fissa: resta ferma per tutta l'anteprima e nel video esportato, non segue il mezzo, e vale solo per la traccia principale (non per le secondarie). I controlli si trovano in fondo al pannello <b>Mezzo</b> e compaiono solo quando la traccia mostrata è quella principale.</p>
+
+  <div class="field">
+    <div class="name">Dimensione bandierina</div>
+    <div class="text">Scala del pin e dell'etichetta sulla mappa. Default <span class="default">1</span> (range 0.2-2).</div>
+  </div>
+
+  <div class="field">
+    <div class="name">Bandierina in quota reale / Esagerazione quota bandierina</div>
+    <div class="text">Stesso meccanismo dell'<b>Icona in quota reale</b> del mezzo (vedi sopra): se attiva, il pin si solleva visivamente sopra il terreno in proporzione alla quota reale del punto — utile se il punto di velocità massima cade in una vallata o su un crinale e rischia di confondersi con lo sfondo. Default <b>OFF</b>; <b>Esagerazione quota bandierina</b> default <span class="default">8</span> (range 1-40), attiva solo con la quota reale accesa.</div>
+  </div>
+
+  <div class="field">
+    <div class="name">Rallentamento del volo intorno al punto</div>
+    <div class="text">Il volo <b>rallenta realmente</b> (non è un fermo immagine né un effetto a tempo fisso) avvicinandosi al punto di velocità massima, per dare il tempo di leggere la bandierina, poi riprende il ritmo normale una volta superato. Essendo un vero rallentamento del ritmo di volo — non un timer separato — resta automaticamente sincronizzato a qualunque velocità di riproduzione scelta (x0.5/x1/x1.5/x2), in anteprima come in esportazione. Tre campi: <b>Rallentamento: distanza prima (m)</b> e <b>distanza dopo (m)</b> — quanti metri di percorso prima/dopo il punto sono interessati dal rallentamento, default <span class="default">300</span> ciascuno (range 0-5000); <b>Fattore di rallentamento</b> — velocità relativa del volo dentro quella zona, default <span class="default">0.4</span> cioè 40% del ritmo normale (range 0.05-1, valori più bassi = rallentamento più marcato).</div>
+    <div class="tip">Il tempo "in più" speso nel rallentamento allunga la durata totale del volo, ed è incluso nella "durata totale consigliata" — vedi il campo <b>Km/sec percepiti</b> più sopra.</div>
+  </div>
+
+  <div class="field">
+    <div class="name">Scarta questo punto / Trova il prossimo — Ripristina</div>
+    <div class="text">Se il punto trovato non è interessante (es. un'autostrada attraversata per un attimo, o rumore GPS locale), <b>Scarta questo punto / Trova il prossimo</b> lo esclude — insieme a una piccola zona di circa 400m intorno, per evitare di ritrovare subito lo stesso tratto — e ricalcola il punto di velocità massima successivo tra i candidati rimasti. È ripetibile più volte (es. se anche il secondo punto è ancora sull'autostrada, si scarta di nuovo). <b>Ripristina</b> azzera tutte le esclusioni accumulate e torna al vero massimo globale della traccia. Un testo sopra i due pulsanti mostra il punto attualmente effettivo e quanti sono stati scartati finora.</div>
+  </div>
+
+  <div class="field">
+    <div class="name">Marcatore sulla timeline principale</div>
+    <div class="text">Sul righello in alto (la barra con la playhead condivisa a musica/foto/testo) compare un piccolo indicatore giallo nell'esatto istante di tempo-video in cui il volo attraversa il punto di velocità massima — utile per trovare al volo quel momento senza scorrere a tentativi. È <b>cliccabile</b>: un clic sposta subito la playhead esattamente lì.</div>
   </div>
 
   <h2 id="musica">Musica &amp; Foto</h2>
@@ -296,11 +326,11 @@
   <h2 id="progetto">Salvare e ricaricare il progetto</h2>
   <div class="field">
     <div class="name">Salva progetto (.json)</div>
-    <div class="text">Scarica un file <code>&lt;titolo&gt;.flyover.json</code> con tutte le impostazioni (camera, mappa, mezzo, musica/foto/testo posizionati, intervallo di export...). <b>Non include</b> il file GPX né i file audio/foto originali — vanno ricaricati a mano.</div>
+    <div class="text">Scarica un file <code>&lt;titolo&gt;.flyover.json</code> con tutte le impostazioni (camera, mappa, mezzo, bandierina "Velocità max" incluse le eventuali esclusioni, musica/foto/testo posizionati, intervallo di export...). <b>Non include</b> il file GPX né i file audio originali (potrebbero pesare centinaia di MB) — vanno ricaricati a mano. Le foto sono invece incorporate per intero nel salvataggio.</div>
   </div>
   <div class="field">
     <div class="name">Carica progetto (.json)</div>
-    <div class="text">Ripristina le impostazioni salvate. Al termine un messaggio di stato elenca cosa va ricaricato manualmente (tracce GPX con relative impostazioni Mezzo da riconfigurare, brani musicali da riaggiungere).</div>
+    <div class="text">Ripristina le impostazioni salvate. Foto e testo sono già pronti da subito, nessuna azione richiesta. Per il GPX e la musica, <b>ricaricare un file con lo stesso nome</b> di quello salvato lo <b>riaggancia automaticamente</b> alla posizione, al taglio e alle altre impostazioni salvate (per il GPX anche le esclusioni della bandierina), invece di aggiungerlo come blocco vuoto in coda — un file con nome diverso viene semplicemente aggiunto come nuovo blocco, come sempre. Sotto i due pulsanti compare un <b>riepilogo persistente</b> che mostra quali file attesi sono già stati riagganciati (per nome) e quali mancano ancora, aggiornato dal vivo man mano che ricarichi i file.</div>
   </div>
 
   <h2 id="pulsanti">I tre pulsanti principali</h2>
@@ -319,6 +349,7 @@
     <tr><td>Il movimento è troppo veloce/illeggibile</td><td>Aumenta la Durata video seguendo il suggerimento calcolato in base ai "Km percepiti al secondo".</td></tr>
     <tr><td>Non vedo il profilo altimetrico / l'icona non si solleva</td><td>Il GPX probabilmente non contiene dati di quota validi (tag <code>&lt;ele&gt;</code> assente) — controlla l'eventuale avviso nelle statistiche dopo il caricamento. Se l'icona si solleva ma troppo poco, alza "Esagerazione quota icona".</td></tr>
     <tr><td>La velocità nel riquadro statistiche mostra "n/d"</td><td>Il GPX non contiene timestamp validi in quel tratto — la quota/posizione restano comunque corrette.</td></tr>
+    <tr><td>Non vedo la bandierina "Velocità max"</td><td>Il GPX non contiene timestamp <code>&lt;time&gt;</code> validi in nessun tratto (serve un timestamp per calcolare una velocità), oppure hai scartato tutti i candidati con "Scarta questo punto" — prova "Ripristina".</td></tr>
     <tr><td>Il browser mostra un avviso sulla codifica video</td><td>Normale su browser senza supporto WebCodecs: la registrazione passa a una modalità in tempo reale più lenta ma funzionante.</td></tr>
   </table>
 
