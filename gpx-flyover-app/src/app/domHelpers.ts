@@ -6,9 +6,3 @@ export function isEditableTarget(target: EventTarget | null): boolean {
   const tag = target.tagName;
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
 }
-
-// Come isEditableTarget, ma include anche i bottoni: usato SOLO per la scorciatoia Spazio
-// (play/pausa), che altrimenti attiverebbe anche il click nativo di un bottone a fuoco.
-export function isEditableOrButtonTarget(target: EventTarget | null): boolean {
-  return isEditableTarget(target) || (target instanceof HTMLElement && target.tagName === 'BUTTON');
-}
