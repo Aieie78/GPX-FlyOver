@@ -9,15 +9,23 @@ export default defineConfig({
     // Offusca solo la build di produzione (apply:'build') — il dev server resta leggibile e
     // veloce. debugProtection/selfDefending esclusi apposta: sono le due opzioni note per
     // rompere in modo imprevedibile bundle che includono librerie complesse come maplibre-gl.
+    // controlFlowFlattening/deadCodeInjection esclusi per lo stesso motivo: la loro
+    // randomizzazione interna genera, circa 1 build su 6, codice che usa `arguments` dentro un
+    // inizializzatore di campo di classe — sintassi che il bundler (Rolldown) rifiuta
+    // ("'arguments' is not allowed in class field initializer"), con build fallita in modo non
+    // riproducibile (non dipende dal codice sorgente, solo dal seed casuale di quella build). Per
+    // uno strumento a uso personale la protezione restante (rinominazione identificatori,
+    // string array, ecc.) è più che sufficiente: non vale la pena tenere un rischio di build
+    // rotta per un'offuscazione che qui serve a poco.
     // @ts-expect-error i tipi del pacchetto non sono compatibili con moduleResolution "nodenext"
     // (funziona correttamente a runtime, tramite l'interop CJS/ESM di Vite/esbuild).
     obfuscatorPlugin({
       apply: 'build',
       options: {
         compact: true,
-        controlFlowFlattening: true,
+        controlFlowFlattening: false,
         controlFlowFlatteningThreshold: 0.75,
-        deadCodeInjection: true,
+        deadCodeInjection: false,
         deadCodeInjectionThreshold: 0.4,
         disableConsoleOutput: true,
         identifierNamesGenerator: 'hexadecimal',
